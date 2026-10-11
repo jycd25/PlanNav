@@ -1,5 +1,7 @@
 # PlanNav
 
+[![npm](https://img.shields.io/npm/v/plannav)](https://www.npmjs.com/package/plannav) [![license](https://img.shields.io/npm/l/plannav)](LICENSE)
+
 A local-first calendar that plans your week from a baseline and adjusts the day when life interrupts.
 
 You keep one template week, your **baseline**: the task slots and busy slots you want a normal week to have. Every real week starts as a copy of it. When the day goes off plan, you tell the assistant in a chat box next to the calendar, and it moves things with tested scheduling functions instead of guessing. Your data stays in a SQLite file on your machine.
@@ -26,6 +28,13 @@ The week came from this baseline, the template every week starts as:
 
 ```bash
 npx plannav
+```
+
+Or install it once and run `plannav` from anywhere:
+
+```bash
+npm install -g plannav
+plannav
 ```
 
 Open http://127.0.0.1:4820. Pick an assistant backend in **Settings**: the Claude Code CLI if `claude` is on your PATH, or an Anthropic API key. Needs Node 22.13 or newer.
@@ -93,16 +102,9 @@ pnpm build        # also bundles packages/plannav
 pnpm bench        # planner friction benchmark (deterministic, seconds)
 ```
 
-## Publishing
+## Releases
 
-`pnpm build` produces the `plannav` package in `packages/plannav`. To release:
-
-```bash
-pnpm build
-pnpm --filter plannav test            # smoke test against the bundle
-pnpm --filter plannav exec npm pack --dry-run   # inspect the tarball contents
-pnpm --filter plannav publish
-```
+PlanNav is published on npm as [plannav](https://www.npmjs.com/package/plannav). Each version's notes are in [RELEASELOG.md](RELEASELOG.md).
 
 ## License
 
