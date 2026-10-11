@@ -37,7 +37,7 @@ npm install -g plannav
 plannav
 ```
 
-Open http://127.0.0.1:4820. Pick an assistant backend in **Settings**: the Claude Code CLI if `claude` is on your PATH, or an Anthropic API key. Needs Node 22.13 or newer.
+Your browser opens on http://127.0.0.1:4820 once the server is up (pass `--no-open` or set `PLANNAV_OPEN=0` to skip that). Pick an assistant backend in **Settings**: the Claude Code CLI if `claude` is on your PATH, or an Anthropic API key. Needs Node 22.13 or newer.
 
 From source:
 

@@ -1,20 +1,43 @@
 {
   "name": "plannav",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A local-first calendar that plans your week from a baseline and adjusts the day when life interrupts. Chat assistant acts only through tested scheduling tools.",
   "license": "Apache-2.0",
   "type": "module",
-  "bin": { "plannav": "./bin/plannav.mjs" },
-  "files": ["bin", "dist"],
-  "engines": { "node": ">=22.13" },
-  "repository": { "type": "git", "url": "git+https://github.com/jycd25/PlanNav.git" },
+  "bin": {
+    "plannav": "./bin/plannav.mjs"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jycd25/PlanNav.git"
+  },
   "homepage": "https://github.com/jycd25/PlanNav#readme",
-  "bugs": { "url": "https://github.com/jycd25/PlanNav/issues" },
-  "keywords": ["calendar", "scheduler", "planner", "time-blocking", "local-first", "sqlite", "claude", "mcp", "assistant"],
+  "bugs": {
+    "url": "https://github.com/jycd25/PlanNav/issues"
+  },
+  "keywords": [
+    "calendar",
+    "scheduler",
+    "planner",
+    "time-blocking",
+    "local-first",
+    "sqlite",
+    "claude",
+    "mcp",
+    "assistant"
+  ],
   "scripts": {
     "build": "node build.mjs",
     "test": "node --test",
-    "typecheck": "node --check build.mjs && node --check bin/plannav.mjs"
+    "typecheck": "node --check build.mjs && node --check bin/plannav.mjs && node --check lib/open.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.0",
