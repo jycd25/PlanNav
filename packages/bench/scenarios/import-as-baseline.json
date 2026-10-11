@@ -1,0 +1,14 @@
+{
+  "name": "import-as-baseline",
+  "now": "2026-10-05T06:00",
+  "events": [
+    {
+      "type": "import_baseline",
+      "ics": "../dialogues/routine.ics"
+    },
+    {
+      "type": "apply_baseline",
+      "weekOf": "this week"
+    }
+  ]
+}

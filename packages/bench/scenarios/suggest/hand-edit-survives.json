@@ -1,0 +1,82 @@
+{
+  "name": "hand-edit-survives",
+  "now": "2026-10-14T09:00",
+  "settings": {
+    "availability": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "09:00",
+        "end": "18:00"
+      }
+    ],
+    "slotMinutes": 15,
+    "minBlockMinutes": 30,
+    "maxBlockMinutes": 90,
+    "maxTasksPerDay": 5,
+    "weekStartsOn": 1
+  },
+  "tasks": [
+    {
+      "name": "Machine learning interview",
+      "priority": 1,
+      "budgetMinutes": 120,
+      "budgetPeriod": "day",
+      "preferredSegment": "morning",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Leetcode",
+      "priority": 2,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Reading",
+      "priority": 3,
+      "budgetMinutes": 30,
+      "budgetPeriod": "day",
+      "preferredSegment": "evening",
+      "sessionMinutes": 30
+    }
+  ],
+  "range": {
+    "from": "2026-10-14T00:00",
+    "to": "2026-10-15T00:00"
+  },
+  "events": [
+    {
+      "type": "plan"
+    },
+    {
+      "type": "advance",
+      "to": "2026-10-14T09:05"
+    },
+    {
+      "type": "move_block",
+      "task": "Leetcode",
+      "start": "2026-10-14T15:00",
+      "end": "2026-10-14T16:00"
+    },
+    {
+      "type": "advance",
+      "to": "2026-10-14T10:30"
+    },
+    {
+      "type": "add_commitment",
+      "title": "Call",
+      "start": "2026-10-14T17:00",
+      "end": "2026-10-14T18:00"
+    },
+    {
+      "type": "replan_until",
+      "until": "2026-10-14T18:00"
+    }
+  ]
+}

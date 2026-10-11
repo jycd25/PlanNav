@@ -1,0 +1,182 @@
+{
+  "name": "shift-day",
+  "now": "2026-10-12T08:00",
+  "settings": {
+    "availability": [],
+    "slotMinutes": 15,
+    "minBlockMinutes": 30,
+    "maxBlockMinutes": 120,
+    "maxTasksPerDay": 8
+  },
+  "tasks": [
+    {
+      "name": "Leetcode",
+      "priority": 1,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Writing",
+      "priority": 2,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Reading",
+      "priority": 3,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Building",
+      "priority": 4,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Design",
+      "priority": 5,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Journal",
+      "priority": 6,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Review",
+      "priority": 7,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    }
+  ],
+  "baseline": {
+    "slots": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "09:00",
+        "end": "10:00",
+        "task": "Leetcode"
+      },
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "10:00",
+        "end": "11:00",
+        "task": "Writing"
+      },
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "11:00",
+        "end": "12:00",
+        "task": "Reading"
+      },
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "12:00",
+        "end": "13:00",
+        "kind": "busy",
+        "title": "Lunch"
+      },
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "13:00",
+        "end": "14:00",
+        "task": "Building"
+      },
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "14:00",
+        "end": "15:00",
+        "task": "Design"
+      },
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "15:00",
+        "end": "16:00",
+        "task": "Journal"
+      },
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "16:00",
+        "end": "17:00",
+        "task": "Review"
+      }
+    ]
+  },
+  "events": [
+    {
+      "type": "apply_baseline",
+      "weekOf": "this week"
+    },
+    {
+      "type": "advance",
+      "to": "2026-10-12T10:40"
+    },
+    {
+      "type": "add_commitment",
+      "title": "Call",
+      "start": "2026-10-12T11:00",
+      "end": "2026-10-12T12:00"
+    },
+    {
+      "type": "shift_day"
+    }
+  ]
+}

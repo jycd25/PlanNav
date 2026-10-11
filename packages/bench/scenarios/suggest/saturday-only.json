@@ -1,0 +1,46 @@
+{
+  "name": "saturday-only",
+  "now": "2026-10-14T10:00",
+  "settings": {
+    "availability": [
+      {
+        "days": [
+          6
+        ],
+        "start": "10:00",
+        "end": "13:00"
+      }
+    ],
+    "slotMinutes": 15,
+    "minBlockMinutes": 30,
+    "maxBlockMinutes": 90,
+    "maxTasksPerDay": 5,
+    "weekStartsOn": 1
+  },
+  "tasks": [
+    {
+      "name": "Reading",
+      "priority": 1,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Leetcode",
+      "priority": 2,
+      "budgetMinutes": 120,
+      "budgetPeriod": "week",
+      "sessionMinutes": 60
+    }
+  ],
+  "range": {
+    "from": "2026-10-14T00:00",
+    "to": "2026-10-19T00:00"
+  },
+  "events": [
+    {
+      "type": "plan",
+      "horizon": "week"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "name": "early-commitment",
+  "now": "2026-10-14T09:00",
+  "settings": {
+    "availability": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "09:00",
+        "end": "13:00"
+      },
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "14:00",
+        "end": "18:00"
+      }
+    ],
+    "slotMinutes": 15,
+    "minBlockMinutes": 30,
+    "maxBlockMinutes": 120,
+    "maxTasksPerDay": 4,
+    "workStyle": "deep",
+    "weekStartsOn": 1
+  },
+  "tasks": [
+    {
+      "name": "Deep work",
+      "priority": 1,
+      "budgetMinutes": 120,
+      "budgetPeriod": "day",
+      "sessionMinutes": 120
+    },
+    {
+      "name": "Reading",
+      "priority": 2,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    }
+  ],
+  "recurring": [
+    {
+      "title": "Standup",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "start": "09:30",
+      "end": "09:45"
+    }
+  ],
+  "range": {
+    "from": "2026-10-14T00:00",
+    "to": "2026-10-15T00:00"
+  },
+  "events": [
+    {
+      "type": "plan"
+    }
+  ]
+}

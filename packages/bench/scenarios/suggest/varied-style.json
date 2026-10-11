@@ -1,0 +1,101 @@
+{
+  "name": "varied-style",
+  "now": "2026-10-12T09:00",
+  "settings": {
+    "availability": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "09:00",
+        "end": "18:00"
+      }
+    ],
+    "slotMinutes": 15,
+    "minBlockMinutes": 30,
+    "maxBlockMinutes": 60,
+    "maxTasksPerDay": 8,
+    "workStyle": "varied",
+    "weekStartsOn": 1
+  },
+  "tasks": [
+    {
+      "name": "Email",
+      "priority": 1,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Leetcode",
+      "priority": 2,
+      "budgetMinutes": 30,
+      "budgetPeriod": "day",
+      "sessionMinutes": 30
+    },
+    {
+      "name": "Reading",
+      "priority": 3,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Writing",
+      "priority": 4,
+      "budgetMinutes": 30,
+      "budgetPeriod": "day",
+      "sessionMinutes": 30
+    },
+    {
+      "name": "Exercise",
+      "priority": 5,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Language",
+      "priority": 6,
+      "budgetMinutes": 30,
+      "budgetPeriod": "day",
+      "sessionMinutes": 30
+    },
+    {
+      "name": "Admin",
+      "priority": 7,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Planning",
+      "priority": 8,
+      "budgetMinutes": 30,
+      "budgetPeriod": "day",
+      "sessionMinutes": 30
+    }
+  ],
+  "range": {
+    "from": "2026-10-12T00:00",
+    "to": "2026-10-13T00:00"
+  },
+  "events": [
+    {
+      "type": "plan"
+    },
+    {
+      "type": "add_commitment",
+      "title": "Lunch with Sam",
+      "start": "2026-10-12T12:00",
+      "end": "2026-10-12T13:00"
+    },
+    {
+      "type": "plan"
+    }
+  ]
+}

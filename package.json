@@ -1,0 +1,22 @@
+{
+  "name": "plannav-monorepo",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "dev": "pnpm --parallel --filter @ds/server --filter @ds/web dev",
+    "start": "pnpm build && pnpm --filter @ds/server start",
+    "prepare": "pnpm --filter @ds/core build",
+    "bench": "node --disable-warning=ExperimentalWarning packages/bench/run.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  }
+}

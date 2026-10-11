@@ -1,0 +1,182 @@
+{
+  "name": "didnt-finish",
+  "seed": {
+    "settings": {
+      "availability": [
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "start": "07:00",
+          "end": "13:00"
+        },
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "start": "14:00",
+          "end": "18:00"
+        },
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "start": "19:00",
+          "end": "21:00"
+        }
+      ],
+      "slotMinutes": 15,
+      "minBlockMinutes": 30,
+      "maxBlockMinutes": 120,
+      "maxTasksPerDay": 4,
+      "workStyle": "deep"
+    },
+    "tasks": [
+      {
+        "name": "Leetcode",
+        "priority": 1,
+        "budgetMinutes": 60,
+        "budgetPeriod": "day",
+        "preferredSegment": "morning",
+        "sessionMinutes": 60
+      },
+      {
+        "name": "AI-assisted coding",
+        "priority": 2,
+        "budgetMinutes": 60,
+        "budgetPeriod": "day",
+        "sessionMinutes": 60
+      },
+      {
+        "name": "Building",
+        "priority": 3,
+        "budgetMinutes": 120,
+        "budgetPeriod": "day",
+        "preferredSegment": "afternoon",
+        "sessionMinutes": 120
+      },
+      {
+        "name": "Startup learning",
+        "priority": 4,
+        "budgetMinutes": 120,
+        "budgetPeriod": "day",
+        "preferredSegment": "evening",
+        "sessionMinutes": 120
+      }
+    ],
+    "baseline": {
+      "slots": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "start": "07:00",
+          "end": "08:00",
+          "task": "Leetcode"
+        },
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "start": "08:00",
+          "end": "09:00",
+          "task": "AI-assisted coding"
+        },
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "start": "13:00",
+          "end": "14:00",
+          "kind": "busy",
+          "title": "Lunch"
+        },
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "start": "14:00",
+          "end": "16:00",
+          "task": "Building"
+        },
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "start": "19:00",
+          "end": "21:00",
+          "task": "Startup learning"
+        }
+      ]
+    },
+    "blocks": [
+      {
+        "task": "Leetcode",
+        "startIn": -90,
+        "durationMinutes": 60,
+        "source": "baseline"
+      },
+      {
+        "task": "Building",
+        "startIn": 120,
+        "durationMinutes": 120,
+        "source": "baseline"
+      }
+    ]
+  },
+  "turns": [
+    {
+      "user": "I didn't finish Leetcode.",
+      "expect": [
+        "carry_over"
+      ],
+      "forbid": [
+        "plan_schedule",
+        "clear_schedule",
+        "add_block"
+      ]
+    }
+  ]
+}

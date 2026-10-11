@@ -1,0 +1,12 @@
+{
+  "churn": 100,
+  "holes": 0.1,
+  "blobs": 0.0333,
+  "splinters": 1,
+  "off_segment": 0.0333,
+  "budget_miss": 0.0333,
+  "must_do_miss": 0.0333,
+  "switches": 1,
+  "late_start": 0.0667,
+  "consistency": 1
+}

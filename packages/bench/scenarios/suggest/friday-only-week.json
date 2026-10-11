@@ -1,0 +1,85 @@
+{
+  "name": "friday-only-week",
+  "now": "2026-10-16T09:00",
+  "settings": {
+    "availability": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "09:00",
+        "end": "11:15"
+      }
+    ],
+    "slotMinutes": 15,
+    "minBlockMinutes": 30,
+    "maxBlockMinutes": 120,
+    "weekStartsOn": 1
+  },
+  "recurring": [
+    {
+      "title": "Standup",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "start": "10:00",
+      "end": "10:15"
+    }
+  ],
+  "tasks": [
+    {
+      "name": "W",
+      "priority": 1,
+      "budgetMinutes": 300,
+      "budgetPeriod": "week",
+      "sessionMinutes": 120
+    },
+    {
+      "name": "V",
+      "priority": 2,
+      "budgetMinutes": 120,
+      "budgetPeriod": "week",
+      "sessionMinutes": 120
+    }
+  ],
+  "blocks": [
+    {
+      "task": "W",
+      "start": "2026-10-12T09:00",
+      "end": "2026-10-12T11:15",
+      "status": "done",
+      "source": "planner"
+    },
+    {
+      "task": "W",
+      "start": "2026-10-13T09:00",
+      "end": "2026-10-13T09:45",
+      "status": "done",
+      "source": "planner"
+    },
+    {
+      "task": "W",
+      "start": "2026-10-16T09:00",
+      "end": "2026-10-16T10:00",
+      "source": "planner"
+    }
+  ],
+  "range": {
+    "from": "2026-10-16T00:00",
+    "to": "2026-10-17T00:00"
+  },
+  "events": [
+    {
+      "type": "plan",
+      "horizon": "week"
+    }
+  ]
+}

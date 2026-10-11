@@ -1,0 +1,76 @@
+{
+  "name": "late-week-two-weekly",
+  "now": "2026-10-15T09:00",
+  "settings": {
+    "availability": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "09:00",
+        "end": "13:00"
+      },
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "14:00",
+        "end": "18:00"
+      }
+    ],
+    "slotMinutes": 15,
+    "minBlockMinutes": 30,
+    "maxBlockMinutes": 120,
+    "maxTasksPerDay": 4,
+    "workStyle": "deep",
+    "weekStartsOn": 1
+  },
+  "tasks": [
+    {
+      "name": "Portfolio",
+      "priority": 1,
+      "budgetMinutes": 300,
+      "budgetPeriod": "week",
+      "sessionMinutes": 120
+    },
+    {
+      "name": "Course",
+      "priority": 2,
+      "budgetMinutes": 300,
+      "budgetPeriod": "week",
+      "sessionMinutes": 120
+    },
+    {
+      "name": "Leetcode",
+      "priority": 3,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Reading",
+      "priority": 4,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    }
+  ],
+  "range": {
+    "from": "2026-10-15T00:00",
+    "to": "2026-10-17T00:00"
+  },
+  "events": [
+    {
+      "type": "plan",
+      "horizon": "week"
+    }
+  ]
+}

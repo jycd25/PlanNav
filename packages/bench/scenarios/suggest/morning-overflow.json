@@ -1,0 +1,79 @@
+{
+  "name": "morning-overflow",
+  "now": "2026-10-12T09:00",
+  "settings": {
+    "availability": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "09:00",
+        "end": "13:00"
+      },
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "14:00",
+        "end": "18:00"
+      }
+    ],
+    "slotMinutes": 15,
+    "minBlockMinutes": 30,
+    "maxBlockMinutes": 120,
+    "maxTasksPerDay": 4,
+    "workStyle": "deep",
+    "weekStartsOn": 1
+  },
+  "tasks": [
+    {
+      "name": "Thesis",
+      "priority": 1,
+      "budgetMinutes": 120,
+      "budgetPeriod": "day",
+      "preferredSegment": "morning",
+      "sessionMinutes": 120
+    },
+    {
+      "name": "Paper review",
+      "priority": 2,
+      "budgetMinutes": 90,
+      "budgetPeriod": "day",
+      "preferredSegment": "morning",
+      "sessionMinutes": 90
+    },
+    {
+      "name": "Grant",
+      "priority": 3,
+      "budgetMinutes": 90,
+      "budgetPeriod": "day",
+      "preferredSegment": "morning",
+      "sessionMinutes": 90
+    },
+    {
+      "name": "Email",
+      "priority": 4,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "preferredSegment": "morning",
+      "sessionMinutes": 60
+    }
+  ],
+  "range": {
+    "from": "2026-10-12T00:00",
+    "to": "2026-10-13T00:00"
+  },
+  "events": [
+    {
+      "type": "plan"
+    }
+  ]
+}

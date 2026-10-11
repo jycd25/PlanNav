@@ -1,0 +1,14 @@
+{
+  "name": "@ds/bench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bench": "node run.mjs",
+    "test": "vitest run",
+    "typecheck": "node --check run.mjs && node --check src/metrics.mjs && node --check src/replay.mjs && node --check src/dialogue.mjs && node --check src/dialogueScore.mjs",
+    "build": "echo bench has no build step"
+  },
+  "dependencies": { "@ds/core": "workspace:*", "@ds/server": "workspace:*" },
+  "devDependencies": { "vitest": "^4.0.0" }
+}

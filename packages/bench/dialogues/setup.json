@@ -1,0 +1,51 @@
+{
+  "name": "setup",
+  "setup": true,
+  "seed": {},
+  "turns": [
+    {
+      "user": "Let's set up my schedule.",
+      "expect": [],
+      "maxQuestions": 0,
+      "mutating": false
+    },
+    {
+      "user": "Add a task Leetcode, 60 minutes a day, priority 1, mornings.",
+      "expect": [
+        "upsert_task"
+      ],
+      "forbid": [
+        "plan_schedule",
+        "clear_schedule"
+      ]
+    },
+    {
+      "user": "I work weekdays from 9 to 18.",
+      "expect": [
+        "set_availability"
+      ],
+      "forbid": [
+        "plan_schedule",
+        "clear_schedule"
+      ]
+    },
+    {
+      "user": "Suggest a schedule.",
+      "expect": [],
+      "forbid": [
+        "plan_schedule",
+        "clear_schedule"
+      ],
+      "mutating": false
+    },
+    {
+      "user": "just pick",
+      "expect": [
+        "plan_schedule"
+      ],
+      "forbid": [
+        "clear_schedule"
+      ]
+    }
+  ]
+}

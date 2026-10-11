@@ -1,0 +1,68 @@
+{
+  "name": "late-start-evening",
+  "now": "2026-10-14T21:15",
+  "settings": {
+    "availability": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "start": "09:00",
+        "end": "18:00"
+      },
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "start": "20:00",
+        "end": "22:30"
+      }
+    ],
+    "slotMinutes": 15,
+    "minBlockMinutes": 30,
+    "maxBlockMinutes": 90,
+    "maxTasksPerDay": 5,
+    "weekStartsOn": 1
+  },
+  "tasks": [
+    {
+      "name": "Machine learning interview",
+      "priority": 1,
+      "budgetMinutes": 120,
+      "budgetPeriod": "day",
+      "preferredSegment": "morning",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Leetcode",
+      "priority": 2,
+      "budgetMinutes": 60,
+      "budgetPeriod": "day",
+      "sessionMinutes": 60
+    },
+    {
+      "name": "Reading",
+      "priority": 3,
+      "budgetMinutes": 30,
+      "budgetPeriod": "day",
+      "preferredSegment": "evening",
+      "sessionMinutes": 30
+    }
+  ],
+  "range": {
+    "from": "2026-10-14T00:00",
+    "to": "2026-10-16T00:00"
+  },
+  "events": [
+    {
+      "type": "plan"
+    }
+  ]
+}
