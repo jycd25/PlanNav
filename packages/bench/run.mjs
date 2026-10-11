@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PlanNav friction benchmark. Read-only during experiment runs; see docs/experiments/scheduler-optimize.md.
+// PlanNav friction benchmark. Read-only during experiment runs: scenarios, dialogues, weights and scorer are frozen.
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

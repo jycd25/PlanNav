@@ -108,4 +108,4 @@ pnpm --filter plannav publish
 
 Apache-2.0. Copyright 2026 jycd25.
 
-See [CLAUDE.md](CLAUDE.md) for the full feature reference and [packages/bench/README.md](packages/bench/README.md) for how the benchmark scores a plan.
+See [packages/bench/README.md](packages/bench/README.md) for how the benchmark scores a plan.

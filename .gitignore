@@ -4,12 +4,6 @@ dist
 *.sqlite-journal
 *.sqlite-wal
 .DS_Store
-.superpowers
-results.tsv
-run.log
-run-state.md
-.claude/worktrees/
-run-*.log
-.push-ship-manifest.json
 *.tgz
 packages/plannav/README.md
+RELEASELOG.md

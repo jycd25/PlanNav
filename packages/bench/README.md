@@ -1,6 +1,6 @@
 # @ds/bench
 
-The friction benchmark for PlanNav. Ground truth for `docs/experiments/scheduler-optimize.md`. **Read-only during experiment runs**: scenarios, dialogues, weights, and scorer are frozen so that experiments optimize the product, not the ruler.
+The friction benchmark for PlanNav. Ground truth for the planner experiments. **Read-only during experiment runs**: scenarios, dialogues, weights, and scorer are frozen so that experiments optimize the product, not the ruler.
 
 ```
 pnpm bench                                  # Tier A on the instance scenarios (scenarios/*.json): the baseline week and its operations; deterministic, seconds
