@@ -137,7 +137,7 @@ export function SettingsPanel({ onClose, onChanged }: { onClose: () => void; onC
         <div className="hint">Import the .ics into Google Calendar or Apple Calendar. The JSON holds everything.</div>
         <div className="row">
           <a className="btn" href="/api/export.ics" download>Download .ics</a>
-          <a className="btn" href="/api/export.json" download="plannav.json">Download JSON</a>
+          <a className="btn" href="/api/export.json" download="rerouteday.json">Download JSON</a>
         </div>
 
         {status && <div className="hint">{status}</div>}

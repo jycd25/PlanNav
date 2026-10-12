@@ -11,7 +11,8 @@ export function openerCommand(url, platform = process.platform) {
 /** True unless the user or environment asked not to open a browser. */
 export function shouldOpen(argv, env = process.env) {
   if (argv.includes('--no-open')) return false;
-  if (env.PLANNAV_OPEN === '0' || env.PLANNAV_OPEN === 'false') return false;
+  const flag = env.REROUTEDAY_OPEN ?? env.PLANNAV_OPEN; // the pre-rename variable is still honored
+  if (flag === '0' || flag === 'false') return false;
   if (env.CI) return false;
   return true;
 }

@@ -20,7 +20,7 @@ CREATE TABLE kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 `;
 
 let dir: string;
-beforeEach(() => { dir = mkdtempSync(join(process.env.TMPDIR ?? tmpdir(), 'plannav-edge-db-')); });
+beforeEach(() => { dir = mkdtempSync(join(process.env.TMPDIR ?? tmpdir(), 'rerouteday-edge-db-')); });
 afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
 const columns = (db: DatabaseSync, table: string) => (db.prepare(`PRAGMA table_info(${table})`).all() as unknown as Array<{ name: string }>).map((c) => c.name);
@@ -211,7 +211,7 @@ describe('kv: JSON values', () => {
     raw.close();
     const s = new SqliteStore(file);
     expect(s.getJson('junk')).toBeUndefined();
-    expect(warn).toHaveBeenLastCalledWith('plannav: the "junk" row in the database is not valid JSON; using defaults until it is saved again.');
+    expect(warn).toHaveBeenLastCalledWith('rerouteday: the "junk" row in the database is not valid JSON; using defaults until it is saved again.');
     expect(s.getSettings()).toEqual(DEFAULT_SETTINGS); // other keys are unaffected
     s.close();
 

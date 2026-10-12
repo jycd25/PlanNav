@@ -144,5 +144,8 @@ describe('importIcs', () => {
     const r = parseIcs(own, { now });
     expect(r.commitments).toEqual([]);
     expect(r.notes.join('\n')).toMatch(/exported by this app/i);
+    for (const old of ['@plannav', '@dynamic-scheduler']) { // exports made under the earlier names are still recognised as our own
+      expect(parseIcs(`BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:x${old}\nSUMMARY:Old\nDTSTART:20261012T100000Z\nDTEND:20261012T110000Z\nEND:VEVENT\nEND:VCALENDAR`, { now: new Date('2026-10-01T00:00:00Z') }).notes.join('\n')).toMatch(/exported by this app/i);
+    }
   });
 });

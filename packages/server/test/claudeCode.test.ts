@@ -409,7 +409,7 @@ describe('claudeEnv', () => {
   it('turns the CLI\'s tool search off, so the scheduler tools are loaded up front and a tool turn needs no ToolSearch round trip', () => {
     const env = claudeEnv('/tmp/x.sqlite', { PATH: '/bin', ENABLE_TOOL_SEARCH: 'true' });
     expect(env.ENABLE_TOOL_SEARCH).toBe('false');
-    expect(env.PLANNAV_DB_PATH).toBe('/tmp/x.sqlite');
+    expect(env.REROUTEDAY_DB_PATH).toBe('/tmp/x.sqlite');
     expect(env.PATH).toBe('/bin');
   });
 });

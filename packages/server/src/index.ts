@@ -27,5 +27,5 @@ const port = Number(process.env.PORT ?? 4820);
 // Local-only by default: the API has no authentication. Set HOST=0.0.0.0 to expose it deliberately.
 const hostname = process.env.HOST ?? '127.0.0.1';
 serve({ fetch: app.fetch, port, hostname }, () => {
-  console.log(`PlanNav server on http://${hostname === '0.0.0.0' ? 'localhost' : hostname}:${port} (db: ${dbPath}, assistant: ${assistant.getConfig().kind})`);
+  console.log(`RerouteDay server on http://${hostname === '0.0.0.0' ? 'localhost' : hostname}:${port} (db: ${dbPath}, assistant: ${assistant.getConfig().kind})`);
 });

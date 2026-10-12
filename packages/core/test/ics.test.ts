@@ -11,7 +11,7 @@ describe('toIcs', () => {
     const lines = ics.split('\r\n');
     expect(lines[0]).toBe('BEGIN:VCALENDAR');
     expect(lines).toContain('VERSION:2.0');
-    expect(lines).toContain('UID:b1@plannav');
+    expect(lines).toContain('UID:b1@rerouteday');
     expect(lines).toContain('DTSTART:20261007T090000Z');
     expect(lines).toContain('DTEND:20261007T103000Z');
     expect(lines).toContain('DTSTAMP:20261007T120000Z');
@@ -40,7 +40,7 @@ describe('toIcs', () => {
 
   it('includes commitments when given', () => {
     const ics = toIcs({ blocks: [], tasks: [], commitments: [{ id: 'c1', title: 'Standup', start: block.start, end: block.end }] });
-    expect(ics).toContain('UID:c1@plannav');
+    expect(ics).toContain('UID:c1@rerouteday');
     expect(ics).toContain('SUMMARY:Standup');
   });
 });
@@ -49,7 +49,7 @@ describe('toIcs recurring', () => {
   it('exports recurring commitments as weekly RRULE events', () => {
     const ics = toIcs({ blocks: [], tasks: [], recurring: [{ id: 'r1', title: 'Standup', days: [1, 3, 5], start: '10:00', end: '10:30' }], now: new Date(2026, 9, 7, 9) });
     const lines = ics.split('\r\n');
-    expect(lines).toContain('UID:r1@plannav');
+    expect(lines).toContain('UID:r1@rerouteday');
     expect(lines).toContain('RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR');
     expect(lines).toContain('X-DS-KIND:recurring');
     const dtstart = lines.find((l) => l.startsWith('DTSTART:'))!;

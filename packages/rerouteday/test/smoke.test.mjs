@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const bin = join(here, '..', 'bin', 'plannav.mjs');
+const bin = join(here, '..', 'bin', 'rerouteday.mjs');
 
 test('--version prints the package version', async () => {
   const out = await run([bin, '--version']);
@@ -15,9 +15,9 @@ test('--version prints the package version', async () => {
 });
 
 test('the bundled server serves the API and the web UI', { skip: !existsSync(join(here, '..', 'dist', 'server.js')) && 'dist not built' }, async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'plannav-smoke-'));
+  const dir = mkdtempSync(join(tmpdir(), 'rerouteday-smoke-'));
   const port = 20000 + Math.floor(Math.random() * 20000);
-  const child = spawn(process.execPath, [bin, '--no-open'], { env: { ...process.env, PORT: String(port), PLANNAV_DB_PATH: join(dir, 'data.sqlite'), PLANNAV_OPEN: '0' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawn(process.execPath, [bin, '--no-open'], { env: { ...process.env, PORT: String(port), REROUTEDAY_DB_PATH: join(dir, 'data.sqlite'), REROUTEDAY_OPEN: '0' }, stdio: ['ignore', 'pipe', 'pipe'] });
   let log = '';
   child.stdout.on('data', (d) => (log += d));
   child.stderr.on('data', (d) => (log += d));

@@ -126,7 +126,7 @@ describe('full flows through the HTTP API', () => {
   });
 
   it('the same flow on a SQLite file survives a reopen: tasks, baseline versions, the memory note and the shifted block', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'plannav-edge-app-'));
+    const dir = mkdtempSync(join(tmpdir(), 'rerouteday-edge-app-'));
     const file = join(dir, 'data.sqlite');
     try {
       const sqlite = new SqliteStore(file);
@@ -597,8 +597,8 @@ describe('exports', () => {
     const res = await app.request('/api/export.ics');
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('text/calendar; charset=utf-8');
-    expect(res.headers.get('content-disposition')).toBe('attachment; filename="plannav.ics"');
-    expect(await res.text()).toBe('BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//plannav//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nEND:VCALENDAR\r\n');
+    expect(res.headers.get('content-disposition')).toBe('attachment; filename="rerouteday.ics"');
+    expect(await res.text()).toBe('BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//rerouteday//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nEND:VCALENDAR\r\n');
   });
 
   it('export.ics with blocks, commitments and recurring rules: one VEVENT each, escaped text, folded lines, archived task names kept', async () => {
@@ -620,16 +620,16 @@ describe('exports', () => {
     expect(lines[0]).toBe('BEGIN:VCALENDAR');
     expect(lines[lines.length - 1]).toBe('END:VCALENDAR');
     const fmt = (x: Date) => x.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-    expect(lines).toContain(`UID:${b.id}@plannav`);
+    expect(lines).toContain(`UID:${b.id}@rerouteday`);
     expect(lines).toContain(`DTSTART:${fmt(d(10))}`);
     expect(lines).toContain('SUMMARY:✓ Deep "work"');
     expect(lines).toContain('X-DS-STATUS:done');
     expect(lines).toContain(`X-DS-TASK-ID:${t}`);
     expect(lines).toContain(`DTSTAMP:${fmt(d(9))}`);
-    expect(lines).toContain(`UID:${c.id}@plannav`);
+    expect(lines).toContain(`UID:${c.id}@rerouteday`);
     expect(lines).toContain('SUMMARY:Dentist\\; teeth\\, gums\\nfloor 2');
     expect(lines).toContain('X-DS-KIND:commitment');
-    expect(lines).toContain(`UID:${r.id}@plannav`);
+    expect(lines).toContain(`UID:${r.id}@rerouteday`);
     expect(lines).toContain('RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR');
     expect(lines).toContain(`DTSTART:${fmt(d(10))}`); // the first occurrence on or after today (Wednesday)
     expect(lines).toContain('X-DS-KIND:recurring');

@@ -1,11 +1,11 @@
 {
-  "name": "plannav",
-  "version": "0.1.2",
+  "name": "rerouteday",
+  "version": "0.2.0",
   "description": "A local-first calendar that plans your week from a baseline and adjusts the day when life interrupts. Chat assistant acts only through tested scheduling tools.",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
-    "plannav": "./bin/plannav.mjs"
+    "rerouteday": "./bin/rerouteday.mjs"
   },
   "files": [
     "bin",
@@ -17,11 +17,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jycd25/PlanNav.git"
+    "url": "git+https://github.com/jycd25/RerouteDay.git"
   },
-  "homepage": "https://github.com/jycd25/PlanNav#readme",
+  "homepage": "https://github.com/jycd25/RerouteDay#readme",
   "bugs": {
-    "url": "https://github.com/jycd25/PlanNav/issues"
+    "url": "https://github.com/jycd25/RerouteDay/issues"
   },
   "keywords": [
     "calendar",
@@ -37,7 +37,7 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "node --test",
-    "typecheck": "node --check build.mjs && node --check bin/plannav.mjs && node --check lib/open.mjs"
+    "typecheck": "node --check build.mjs && node --check bin/rerouteday.mjs && node --check lib/open.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.0",

@@ -14,7 +14,7 @@ const out = join(here, 'dist');
 
 for (const [what, p] of [['@ds/server', join(serverDist, 'index.js')], ['@ds/web', join(webDist, 'index.html')]]) {
   if (!existsSync(p)) {
-    console.error(`plannav build: ${what} is not built (${p} missing). Run \`pnpm build\` from the repo root.`);
+    console.error(`rerouteday build: ${what} is not built (${p} missing). Run \`pnpm build\` from the repo root.`);
     process.exit(1);
   }
 }
@@ -35,4 +35,4 @@ await build({ ...common, entryPoints: [join(serverDist, 'mcp.js')], outfile: joi
 cpSync(webDist, join(out, 'web'), { recursive: true });
 // npm shows the package README; the repo's is the source of truth, so it is copied here at build time (git-ignored).
 cpSync(join(here, '..', '..', 'README.md'), join(here, 'README.md'));
-console.log('plannav build: dist/server.js, dist/mcp.js, dist/web, README.md');
+console.log('rerouteday build: dist/server.js, dist/mcp.js, dist/web, README.md');

@@ -1,6 +1,6 @@
-# PlanNav
+# RerouteDay
 
-[![npm](https://img.shields.io/npm/v/plannav)](https://www.npmjs.com/package/plannav) [![license](https://img.shields.io/npm/l/plannav)](LICENSE)
+[![npm](https://img.shields.io/npm/v/rerouteday)](https://www.npmjs.com/package/rerouteday) [![license](https://img.shields.io/npm/l/rerouteday)](LICENSE)
 
 A local-first calendar that plans your week from a baseline and adjusts the day when life interrupts.
 
@@ -10,7 +10,7 @@ You keep one template week, your **baseline**: the task slots and busy slots you
 
 Two messages, no editing by hand. "I'm starting now" is a direct action: the server recognises it and shifts the rest of the day on the spot, without a model call. The second message goes to the assistant, which picks the carve-out tool, splits the thesis block around the pickup, moves what follows, and says exactly what it did.
 
-![A week in PlanNav: the baseline applied, then adjusted day by day](assets/week.png)
+![A week in RerouteDay: the baseline applied, then adjusted day by day](assets/week.png)
 
 One week, as it happened, for a made-up grad student with a freelance client. Every change on it came from a sentence to the assistant or a click on a block:
 
@@ -27,17 +27,17 @@ The week came from this baseline, the template every week starts as:
 ## Quick start
 
 ```bash
-npx plannav
+npx rerouteday
 ```
 
-Or install it once and run `plannav` from anywhere:
+Or install it once and run `rerouteday` from anywhere:
 
 ```bash
-npm install -g plannav
-plannav
+npm install -g rerouteday
+rerouteday
 ```
 
-Your browser opens on http://127.0.0.1:4820 once the server is up (pass `--no-open` or set `PLANNAV_OPEN=0` to skip that). Pick an assistant backend in **Settings**: the Claude Code CLI if `claude` is on your PATH, or an Anthropic API key. Needs Node 22.13 or newer.
+Your browser opens on http://127.0.0.1:4820 once the server is up (pass `--no-open` or set `REROUTEDAY_OPEN=0` to skip that). Pick an assistant backend in **Settings**: the Claude Code CLI if `claude` is on your PATH, or an Anthropic API key. Needs Node 22.13 or newer.
 
 From source:
 
@@ -47,11 +47,11 @@ pnpm dev        # API on http://localhost:4820, UI on http://localhost:5173
 pnpm start      # production build served from one port
 ```
 
-Data lives in `~/.plannav/data.sqlite`. Set `PLANNAV_DB_PATH` to move it and `PORT` to change the port.
+Data lives in `~/.rerouteday/data.sqlite`. Set `REROUTEDAY_DB_PATH` to move it and `PORT` to change the port.
 
 ## Why
 
-Most planners make you rebuild the week from scratch or let an AI rewrite your calendar freely. PlanNav does neither:
+Most planners make you rebuild the week from scratch or let an AI rewrite your calendar freely. RerouteDay does neither:
 
 - The baseline is the source of truth. A week is the baseline applied, then adjusted day by day. Nothing is replanned behind your back.
 - The assistant can only act through a fixed set of scheduling tools (shift the day, carve out an hour, carry over unfinished work, apply the baseline). Each tool is pure, deterministic and unit tested. The model picks the tool; the code decides the result.
@@ -71,7 +71,7 @@ Most planners make you rebuild the week from scratch or let an AI rewrite your c
 
 ## Requirements
 
-- Node 22.13 or newer. PlanNav uses the built-in `node:sqlite`.
+- Node 22.13 or newer. RerouteDay uses the built-in `node:sqlite`.
 - pnpm, to run from source.
 - An assistant backend: the Claude Code CLI installed and logged in, or an Anthropic API key.
 
@@ -91,7 +91,7 @@ packages/core     scheduling logic, budgets, stats, iCalendar import and export,
 packages/server   Hono API, SQLite store, assistant providers, MCP server, static serving
 packages/web      Vite + React calendar and chat panel
 packages/bench    friction benchmark: scenarios, dialogues and scorer for the planner
-packages/plannav  the npm package: bundles server, core and the built UI into `npx plannav`
+packages/rerouteday  the npm package: bundles server, core and the built UI into `npx rerouteday`
 ```
 
 ## Development
@@ -99,13 +99,13 @@ packages/plannav  the npm package: bundles server, core and the built UI into `n
 ```bash
 pnpm test         # all packages
 pnpm typecheck
-pnpm build        # also bundles packages/plannav
+pnpm build        # also bundles packages/rerouteday
 pnpm bench        # planner friction benchmark (deterministic, seconds)
 ```
 
 ## Releases
 
-PlanNav is published on npm as [plannav](https://www.npmjs.com/package/plannav). Each version's notes are in [RELEASELOG.md](RELEASELOG.md).
+RerouteDay is published on npm as [rerouteday](https://www.npmjs.com/package/rerouteday). Each version's notes are in [RELEASELOG.md](RELEASELOG.md).
 
 ## License
 

@@ -230,7 +230,7 @@ export function createApp(deps: AppDeps) {
 
   app.get('/api/export.ics', (c) => {
     const body = toIcs({ blocks: store.listBlocks(), tasks: store.listTasks(true), commitments: store.listCommitments(), recurring: store.listRecurring(), now: now() });
-    return c.body(body, 200, { 'content-type': 'text/calendar; charset=utf-8', 'content-disposition': 'attachment; filename="plannav.ics"' });
+    return c.body(body, 200, { 'content-type': 'text/calendar; charset=utf-8', 'content-disposition': 'attachment; filename="rerouteday.ics"' });
   });
   app.get('/api/export.json', (c) => c.json(store.exportAll()));
 

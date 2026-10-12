@@ -259,6 +259,6 @@ describe('SettingsPanel: loading, closing, import and export', () => {
     expect(ics.getAttribute('href')).toBe('/api/export.ics');
     expect(ics.hasAttribute('download')).toBe(true);
     expect(json.getAttribute('href')).toBe('/api/export.json');
-    expect(json.getAttribute('download')).toBe('plannav.json');
+    expect(json.getAttribute('download')).toBe('rerouteday.json');
   });
 });

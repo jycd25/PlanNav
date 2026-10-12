@@ -150,7 +150,7 @@ export function buildClaudeArgs(o: { text?: string; systemPrompt: string; mcpCon
  * With it off the scheduler's tool schemas are in the request from the start.
  */
 export function claudeEnv(dbPath: string, base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-  return { ...base, PLANNAV_DB_PATH: dbPath, ENABLE_TOOL_SEARCH: 'false' };
+  return { ...base, REROUTEDAY_DB_PATH: dbPath, ENABLE_TOOL_SEARCH: 'false' };
 }
 
 export interface ClaudeCodeConfig {
@@ -297,7 +297,7 @@ export class ClaudeCodeProvider implements AssistantProvider {
 
   private mcpConfig(): string {
     const mcp = mcpServerCommand();
-    return JSON.stringify({ mcpServers: { scheduler: { command: mcp.command, args: mcp.args, env: { PLANNAV_DB_PATH: this.cfg.dbPath } } } });
+    return JSON.stringify({ mcpServers: { scheduler: { command: mcp.command, args: mcp.args, env: { REROUTEDAY_DB_PATH: this.cfg.dbPath } } } });
   }
 
   /** Start the long-lived CLI now (the chat opened), so the first message does not wait for process start. */

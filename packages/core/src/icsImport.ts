@@ -16,7 +16,7 @@ export interface ImportResult {
 }
 export interface ParseOptions { now: Date; horizonDays?: number; lookbackDays?: number }
 
-const OWN_UID = /@(plannav|dynamic-scheduler)$/; // own exports, including those made before the rename
+const OWN_UID = /@(rerouteday|plannav|dynamic-scheduler)$/; // own exports, including those made before the renames
 const BYDAY: Record<string, number> = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
 const MAX_ITERATIONS = 20_000;
 

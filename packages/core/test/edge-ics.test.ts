@@ -49,7 +49,7 @@ describe('foldLine', () => {
 
 describe('toIcs: skeleton and statuses', () => {
   it('an empty export is just the calendar wrapper, CRLF-terminated', () => {
-    expect(toIcs({ blocks: [], tasks: [], now }).split('\r\n')).toEqual(['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//plannav//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'END:VCALENDAR', '']);
+    expect(toIcs({ blocks: [], tasks: [], now }).split('\r\n')).toEqual(['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//rerouteday//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'END:VCALENDAR', '']);
   });
   it('a block whose task is gone is exported as "Task"; only done blocks get the tick', () => {
     const b = block('b1', 'ghost', '2026-10-07T16:00:00.000Z', '2026-10-07T17:00:00.000Z', 'skipped');
@@ -88,7 +88,7 @@ describe('toIcs: recurring commitments', () => {
 
 describe('round trip: export, re-label the UIDs, import', () => {
   // The parser skips this app's own UIDs on purpose, so the round trip rewrites them as another producer's.
-  const foreign = (ics: string) => ics.replace(/@plannav/g, '@elsewhere');
+  const foreign = (ics: string) => ics.replace(/@rerouteday/g, '@elsewhere');
   const long = 'x'.repeat(120);
   const tasks = [task('t1', 'Write; review, ship\nnow'), task('t2', long)];
   const blocks = [block('b1', 't1', '2026-10-09T16:00:00.000Z', '2026-10-09T17:00:00.000Z', 'done'), block('b2', 't2', '2026-10-10T16:00:00.000Z', '2026-10-10T17:00:00.000Z')];
@@ -102,7 +102,7 @@ describe('round trip: export, re-label the UIDs, import', () => {
       { id: 'ics:b2@elsewhere', title: long, start: '2026-10-10T16:00:00.000Z', end: '2026-10-10T17:00:00.000Z' },
       { id: 'ics:c1@elsewhere', title: 'Lunch, with; friends\nlate', start: '2026-10-11T16:00:00.000Z', end: '2026-10-11T17:00:00.000Z' },
     ]);
-    expect(r.calendarName).toBe('-//plannav//EN');
+    expect(r.calendarName).toBe('-//rerouteday//EN');
   });
   it('a weekly recurring commitment comes back as its occurrences at the same local time', () => {
     const r = parseIcs(foreign(toIcs({ blocks: [], tasks: [], recurring: [{ id: 'r1', title: 'Standup', days: [3], start: '10:00', end: '10:30' }], now })), { now, horizonDays: 10 });

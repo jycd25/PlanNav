@@ -11,17 +11,17 @@ describe('defaultDbPath', () => {
   it('an environment override is returned as given, with no existence check and no directory made', () => {
     const asked: string[] = [];
     const spy = (p: string) => { asked.push(p); return false; };
-    expect(defaultDbPath({ PLANNAV_DB_PATH: 'relative/path.sqlite' }, home, spy)).toBe('relative/path.sqlite');
-    expect(defaultDbPath({ PLANNAV_DB_PATH: ':memory:' }, home, spy)).toBe(':memory:');
+    expect(defaultDbPath({ REROUTEDAY_DB_PATH: 'relative/path.sqlite' }, home, spy)).toBe('relative/path.sqlite');
+    expect(defaultDbPath({ REROUTEDAY_DB_PATH: ':memory:' }, home, spy)).toBe(':memory:');
     expect(defaultDbPath({ DS_DB_PATH: '/x/y.sqlite' }, home, spy)).toBe('/x/y.sqlite');
     expect(asked).toEqual([]);
   });
 
   it('an empty override is no override', () => {
-    const tmpHome = mkdtempSync(join(tmpdir(), 'plannav-home-'));
+    const tmpHome = mkdtempSync(join(tmpdir(), 'rerouteday-home-'));
     try {
-      expect(defaultDbPath({ PLANNAV_DB_PATH: '', DS_DB_PATH: '' }, tmpHome, never)).toBe(join(tmpHome, '.plannav', 'data.sqlite'));
-      expect(existsSync(join(tmpHome, '.plannav'))).toBe(true);
+      expect(defaultDbPath({ REROUTEDAY_DB_PATH: '', DS_DB_PATH: '' }, tmpHome, never)).toBe(join(tmpHome, '.rerouteday', 'data.sqlite'));
+      expect(existsSync(join(tmpHome, '.rerouteday'))).toBe(true);
     } finally {
       rmSync(tmpHome, { recursive: true, force: true });
     }
@@ -29,27 +29,27 @@ describe('defaultDbPath', () => {
 
   it('the legacy database wins only while the new one does not exist; both present means the new one', () => {
     const legacy = join(home, '.dynamic-scheduler', 'data.sqlite');
-    const fresh = join(home, '.plannav', 'data.sqlite');
-    const tmpHome = mkdtempSync(join(tmpdir(), 'plannav-home-'));
+    const fresh = join(home, '.rerouteday', 'data.sqlite');
+    const tmpHome = mkdtempSync(join(tmpdir(), 'rerouteday-home-'));
     try {
       expect(defaultDbPath({}, tmpHome, (p) => p === legacy.replace(home, tmpHome))).toBe(join(tmpHome, '.dynamic-scheduler', 'data.sqlite'));
-      expect(existsSync(join(tmpHome, '.plannav'))).toBe(false); // nothing is created when the legacy file is used
-      expect(defaultDbPath({}, tmpHome, (p) => p === legacy.replace(home, tmpHome) || p === fresh.replace(home, tmpHome))).toBe(join(tmpHome, '.plannav', 'data.sqlite'));
-      expect(existsSync(join(tmpHome, '.plannav'))).toBe(true);
+      expect(existsSync(join(tmpHome, '.rerouteday'))).toBe(false); // nothing is created when the legacy file is used
+      expect(defaultDbPath({}, tmpHome, (p) => p === legacy.replace(home, tmpHome) || p === fresh.replace(home, tmpHome))).toBe(join(tmpHome, '.rerouteday', 'data.sqlite'));
+      expect(existsSync(join(tmpHome, '.rerouteday'))).toBe(true);
     } finally {
       rmSync(tmpHome, { recursive: true, force: true });
     }
   });
 
   it('with the real file system: a legacy file present and no new one is honoured; a new one present is preferred', () => {
-    const tmpHome = mkdtempSync(join(tmpdir(), 'plannav-home-'));
+    const tmpHome = mkdtempSync(join(tmpdir(), 'rerouteday-home-'));
     try {
       mkdirSync(join(tmpHome, '.dynamic-scheduler'));
       writeFileSync(join(tmpHome, '.dynamic-scheduler', 'data.sqlite'), '');
       expect(defaultDbPath({}, tmpHome)).toBe(join(tmpHome, '.dynamic-scheduler', 'data.sqlite'));
-      mkdirSync(join(tmpHome, '.plannav'));
-      writeFileSync(join(tmpHome, '.plannav', 'data.sqlite'), '');
-      expect(defaultDbPath({}, tmpHome)).toBe(join(tmpHome, '.plannav', 'data.sqlite'));
+      mkdirSync(join(tmpHome, '.rerouteday'));
+      writeFileSync(join(tmpHome, '.rerouteday', 'data.sqlite'), '');
+      expect(defaultDbPath({}, tmpHome)).toBe(join(tmpHome, '.rerouteday', 'data.sqlite'));
     } finally {
       rmSync(tmpHome, { recursive: true, force: true });
     }
@@ -57,13 +57,13 @@ describe('defaultDbPath', () => {
 
   it('the exists predicate is asked about the new path first, then the legacy one only if needed', () => {
     const asked: string[] = [];
-    const tmpHome = mkdtempSync(join(tmpdir(), 'plannav-home-'));
+    const tmpHome = mkdtempSync(join(tmpdir(), 'rerouteday-home-'));
     try {
-      defaultDbPath({}, tmpHome, (p) => { asked.push(p); return p.endsWith(join('.plannav', 'data.sqlite')); });
-      expect(asked).toEqual([join(tmpHome, '.plannav', 'data.sqlite')]);
+      defaultDbPath({}, tmpHome, (p) => { asked.push(p); return p.endsWith(join('.rerouteday', 'data.sqlite')); });
+      expect(asked).toEqual([join(tmpHome, '.rerouteday', 'data.sqlite')]);
       asked.length = 0;
       defaultDbPath({}, tmpHome, (p) => { asked.push(p); return false; });
-      expect(asked).toEqual([join(tmpHome, '.plannav', 'data.sqlite'), join(tmpHome, '.dynamic-scheduler', 'data.sqlite')]);
+      expect(asked).toEqual([join(tmpHome, '.rerouteday', 'data.sqlite'), join(tmpHome, '.plannav', 'data.sqlite'), join(tmpHome, '.dynamic-scheduler', 'data.sqlite')]); // the two earlier names, newest first
     } finally {
       rmSync(tmpHome, { recursive: true, force: true });
     }
@@ -93,7 +93,7 @@ describe('firstExisting', () => {
   });
 
   it('uses the real file system by default', () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'plannav-first-'));
+    const tmp = mkdtempSync(join(tmpdir(), 'rerouteday-first-'));
     try {
       const file = join(tmp, 'here.txt');
       writeFileSync(file, '');

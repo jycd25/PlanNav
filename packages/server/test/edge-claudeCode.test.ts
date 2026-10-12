@@ -56,11 +56,11 @@ describe('buildClaudeArgs', () => {
 
 describe('claudeEnv', () => {
   it('overrides a database path and a tool-search flag already in the base, keeps everything else, and never mutates the base', () => {
-    const base = { HOME: '/h', PLANNAV_DB_PATH: '/old.sqlite', ENABLE_TOOL_SEARCH: 'true', DS_DB_PATH: '/legacy.sqlite' };
+    const base = { HOME: '/h', REROUTEDAY_DB_PATH: '/old.sqlite', ENABLE_TOOL_SEARCH: 'true', DS_DB_PATH: '/legacy.sqlite' };
     const env = claudeEnv('/new.sqlite', base);
-    expect(env).toEqual({ HOME: '/h', PLANNAV_DB_PATH: '/new.sqlite', ENABLE_TOOL_SEARCH: 'false', DS_DB_PATH: '/legacy.sqlite' });
-    expect(base.PLANNAV_DB_PATH).toBe('/old.sqlite');
-    expect(claudeEnv(':memory:', {})).toEqual({ PLANNAV_DB_PATH: ':memory:', ENABLE_TOOL_SEARCH: 'false' });
+    expect(env).toEqual({ HOME: '/h', REROUTEDAY_DB_PATH: '/new.sqlite', ENABLE_TOOL_SEARCH: 'false', DS_DB_PATH: '/legacy.sqlite' });
+    expect(base.REROUTEDAY_DB_PATH).toBe('/old.sqlite');
+    expect(claudeEnv(':memory:', {})).toEqual({ REROUTEDAY_DB_PATH: ':memory:', ENABLE_TOOL_SEARCH: 'false' });
   });
 });
 

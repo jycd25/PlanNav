@@ -5,5 +5,4 @@ dist
 *.sqlite-wal
 .DS_Store
 *.tgz
-packages/plannav/README.md
-RELEASELOG.md
+packages/rerouteday/README.md

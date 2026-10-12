@@ -29,8 +29,21 @@ describe('firstExisting', () => {
 
 describe('defaultDbPath', () => {
   const home = '/home/u';
-  it('PLANNAV_DB_PATH wins, then the pre-rename DS_DB_PATH', () => {
-    expect(defaultDbPath({ PLANNAV_DB_PATH: '/a', DS_DB_PATH: '/b' }, home, () => false)).toBe('/a');
+  it('an existing ~/.plannav database is used before ~/.dynamic-scheduler, and neither once ~/.rerouteday has one', () => {
+    const fresh = join(home, '.rerouteday', 'data.sqlite');
+    const plannav = join(home, '.plannav', 'data.sqlite');
+    const ds = join(home, '.dynamic-scheduler', 'data.sqlite');
+    const tmpHome = mkdtempSync(join(tmpdir(), 'rerouteday-home-'));
+    try {
+      expect(defaultDbPath({}, tmpHome, (p) => p.endsWith(plannav.slice(home.length)) || p.endsWith(ds.slice(home.length)))).toBe(join(tmpHome, '.plannav', 'data.sqlite'));
+      expect(defaultDbPath({}, tmpHome, (p) => p.endsWith(ds.slice(home.length)))).toBe(join(tmpHome, '.dynamic-scheduler', 'data.sqlite'));
+      expect(defaultDbPath({}, tmpHome, (p) => p.endsWith(fresh.slice(home.length)) || p.endsWith(plannav.slice(home.length)))).toBe(join(tmpHome, '.rerouteday', 'data.sqlite'));
+    } finally { rmSync(tmpHome, { recursive: true, force: true }); }
+  });
+
+  it('REROUTEDAY_DB_PATH wins, then the pre-rename PLANNAV_DB_PATH, then DS_DB_PATH', () => {
+    expect(defaultDbPath({ REROUTEDAY_DB_PATH: '/a', PLANNAV_DB_PATH: '/p', DS_DB_PATH: '/b' }, home, () => false)).toBe('/a');
+    expect(defaultDbPath({ PLANNAV_DB_PATH: '/p', DS_DB_PATH: '/b' }, home, () => false)).toBe('/p');
     expect(defaultDbPath({ DS_DB_PATH: '/b' }, home, () => false)).toBe('/b');
   });
   it('uses an existing pre-rename database when the new default does not exist yet', () => {
@@ -38,11 +51,11 @@ describe('defaultDbPath', () => {
     expect(defaultDbPath({}, home, (p) => p === legacy)).toBe(legacy);
   });
   it('prefers the new default once it exists (and creates its directory)', () => {
-    const tmpHome = mkdtempSync(join(tmpdir(), 'plannav-home-'));
+    const tmpHome = mkdtempSync(join(tmpdir(), 'rerouteday-home-'));
     try {
-      const fresh = join(tmpHome, '.plannav', 'data.sqlite');
+      const fresh = join(tmpHome, '.rerouteday', 'data.sqlite');
       expect(defaultDbPath({}, tmpHome, (p) => p === fresh || p.includes('.dynamic-scheduler'))).toBe(fresh);
-      expect(existsSync(join(tmpHome, '.plannav'))).toBe(true);
+      expect(existsSync(join(tmpHome, '.rerouteday'))).toBe(true);
     } finally {
       rmSync(tmpHome, { recursive: true, force: true });
     }

@@ -86,7 +86,7 @@ export function App() {
     <div className="app layout-beside">
       <header className="toolbar">
         <div className="toolbar-left">
-          <span className="brand">PlanNav</span>
+          <span className="brand">RerouteDay</span>
           {view === 'baseline' ? <h1 className="range">Baseline week</h1> : (<>
             <button className="btn" onClick={() => setAnchor(startOfDay(new Date()))}>Today</button>
             <div className="nav">

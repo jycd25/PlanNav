@@ -38,14 +38,14 @@ const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 export function toIcs({ blocks, tasks, commitments = [], recurring = [], now = new Date() }: IcsInput): string {
   const stamp = fmtUtc(now);
   const taskById = new Map(tasks.map((t) => [t.id, t]));
-  const lines: string[] = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//plannav//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+  const lines: string[] = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//rerouteday//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
 
   for (const b of blocks) {
     const name = taskById.get(b.taskId)?.name ?? 'Task';
     const summary = (b.status === 'done' ? '✓ ' : '') + name;
     lines.push(
       'BEGIN:VEVENT',
-      `UID:${b.id}@plannav`,
+      `UID:${b.id}@rerouteday`,
       `DTSTAMP:${stamp}`,
       `DTSTART:${fmtUtc(b.start)}`,
       `DTEND:${fmtUtc(b.end)}`,
@@ -60,7 +60,7 @@ export function toIcs({ blocks, tasks, commitments = [], recurring = [], now = n
   for (const c of commitments) {
     lines.push(
       'BEGIN:VEVENT',
-      `UID:${c.id}@plannav`,
+      `UID:${c.id}@rerouteday`,
       `DTSTAMP:${stamp}`,
       `DTSTART:${fmtUtc(c.start)}`,
       `DTEND:${fmtUtc(c.end)}`,
@@ -75,7 +75,7 @@ export function toIcs({ blocks, tasks, commitments = [], recurring = [], now = n
     for (let i = 0; i < 7 && !r.days.includes(day.getDay()); i += 1) day = addDays(day, 1);
     lines.push(
       'BEGIN:VEVENT',
-      `UID:${r.id}@plannav`,
+      `UID:${r.id}@rerouteday`,
       `DTSTAMP:${stamp}`,
       `DTSTART:${fmtUtc(atTime(day, r.start))}`,
       `DTEND:${fmtUtc(atTime(day, r.end))}`,
