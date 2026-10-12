@@ -34,57 +34,113 @@ const at = (id: string) => span(store.getBlock(id)!);
 describe('shiftDay', () => {
   beforeEach(week);
 
-  it('shortens the block containing now to start at now and moves each later block up to the previous one\'s end, inside the usable spans', () => {
+  // Wednesday at 10:20, b is 20 minutes in. Keeping the breaks moves every block 20 minutes later; c lands after lunch
+  // (11:20-12:20 would cross it), the blank 15:00-17:00 stays a break, so f would end at 19:00, past the day's 18:00.
+  it('asks before ending the day past its last usable minute: nothing changes, and the question names the breaks, the late end, and what waiving them gives', () => {
     wednesday();
-    store.updateBlock('c', { start: d(7, 11, 30).toISOString(), end: d(7, 12).toISOString() }); // a gap before c
     const r = shiftDay(store, d(7, 10, 20));
-    expect(r.shortened.map((x) => x.id)).toEqual(['b']);
-    expect(at('b')).toBe('10:20-11:00');
-    expect(r.moved.map((x) => [x.id, span(x)])).toEqual([['c', '11:00-11:30'], ['f', '15:00-16:00']]);
-    expect(at('d')).toBe('13:00-14:00'); // 11:30-12:30 would cross the lunch edge; its own slot is the first fit, so it stays
-    expect(at('e')).toBe('14:00-15:00');
-    expect(r.dropped).toEqual([]);
-    expect(r.created).toEqual([]);
-    expect(r.summary).toBe('Shifted 3 blocks to start now.');
+    expect(r.needsConfirmation).toBe(true);
+    expect(r.summary).toBe('Shifting 5 blocks by 20 min keeps your breaks (15:00-17:00) but ends the day at 19:00, past 18:00. Waive the breaks to end at 18:00, or keep them and end later?');
+    expect(['b', 'c', 'd', 'e', 'f'].map(at)).toEqual(['10:00-11:00', '11:00-12:00', '13:00-14:00', '14:00-15:00', '17:00-18:00']);
+    expect([r.moved, r.shortened, r.dropped, r.created]).toEqual([[], [], [], []]);
     expect(store.getBlock('a')!.status).toBe('missed'); // over at 10:20 and never marked
-    expect(['b', 'c', 'f'].map((id) => store.getBlock(id)!.source)).toEqual(['adjusted', 'adjusted', 'adjusted']); // adjusted: a re-apply keeps them, a later operation may move them
-    expect(['d', 'e'].map((id) => store.getBlock(id)!.source)).toEqual(['baseline', 'baseline']);
   });
 
-  it('a block that can start earlier than its slot moves up, even across a blank stretch', () => {
+  it('breaks waived: each break shrinks to absorb the delay, no block moves earlier than its slot, and the day ends at its usual time', () => {
     wednesday();
-    store.deleteBlocks(['d', 'e']);
-    const r = shiftDay(store, d(7, 13, 10)); // nothing until f at 17:00
-    expect(r.moved.map((x) => [x.id, span(x)])).toEqual([['f', '13:10-14:10']]);
-    expect(r.summary).toBe('Shifted 1 block to start now.');
+    const r = shiftDay(store, d(7, 10, 20), { breaks: 'waive' });
+    expect(r.needsConfirmation).toBeUndefined();
+    expect(r.moved.map((x) => [x.id, span(x)])).toEqual([['b', '10:20-11:20'], ['c', '13:00-14:00'], ['d', '14:00-15:00'], ['e', '15:00-16:00']]);
+    expect(at('f')).toBe('17:00-18:00'); // the two-hour break before it absorbed the push
+    expect([r.shortened, r.dropped, r.created]).toEqual([[], [], []]);
+    expect(r.summary).toBe('Shifted 4 blocks by 20 min, breaks waived; the day ends at 18:00.');
+    expect(['b', 'c', 'd', 'e', 'f'].map((id) => store.getBlock(id)!.source)).toEqual(['adjusted', 'adjusted', 'adjusted', 'adjusted', 'baseline']); // adjusted: a re-apply keeps them, a later operation may move them
   });
 
-  it('skips busy time: a commitment added over a block pushes it past the commitment, and what then ends after the day\'s last usable minute is dropped', () => {
+  it('breaks kept: every block moves by the delay, the blank stretch stays, and the day ends later than the baseline', () => {
     wednesday();
-    store.addCommitment({ id: 'call', title: 'Call', start: d(7, 17).toISOString(), end: d(7, 17, 30).toISOString() });
-    store.insertBlocks([blk('m', 'a', d(7, 15), d(7, 17), { source: 'manual' })]); // 15:00-17:00 is taken by hand
-    const r = shiftDay(store, d(7, 14, 30));
-    expect(at('e')).toBe('14:30-15:00');
-    expect(r.dropped.map((x) => x.id)).toEqual(['f']); // 17:30-18:30 ends after 18:00
+    const r = shiftDay(store, d(7, 10, 20), { breaks: 'keep' });
+    expect(r.moved.map((x) => [x.id, span(x)])).toEqual([['b', '10:20-11:20'], ['c', '13:00-14:00'], ['d', '14:00-15:00'], ['e', '15:00-16:00'], ['f', '18:00-19:00']]);
+    expect(r.summary).toBe('Shifted 5 blocks by 20 min, breaks kept; the day ends at 19:00.');
+  });
+
+  it('when the shifted day still ends by its last usable minute it is made at once, breaks kept', () => {
+    wednesday();
+    store.deleteBlocks(['f']);
+    store.updateBlock('e', { start: d(7, 15, 30).toISOString(), end: d(7, 16, 30).toISOString() }); // a 90-minute break before e
+    const r = shiftDay(store, d(7, 10, 20));
+    expect(r.needsConfirmation).toBeUndefined();
+    expect(r.moved.map((x) => [x.id, span(x)])).toEqual([['b', '10:20-11:20'], ['c', '13:00-14:00'], ['d', '14:00-15:00'], ['e', '16:30-17:30']]);
+    expect(r.summary).toBe('Shifted 4 blocks by 20 min, breaks kept; the day ends at 17:30.');
+  });
+
+  it('with no break between the blocks the summary says so by leaving it out', () => {
+    wednesday();
+    store.deleteBlocks(['f']);
+    expect(shiftDay(store, d(7, 10, 20)).summary).toBe('Shifted 4 blocks by 20 min; the day ends at 16:00.');
+  });
+
+  it('never moves a block earlier: said before the next block starts, nothing is shifted', () => {
+    wednesday();
+    const r = shiftDay(store, d(7, 12, 30));
+    expect(r.summary).toBe('Nothing to shift: d starts at 13:00.');
+    expect(r.needsConfirmation).toBeUndefined();
+    expect(at('d')).toBe('13:00-14:00');
+  });
+
+  it('the block in progress keeps its end when its whole length no longer fits before busy time (the minutes before now are forfeited)', () => {
+    wednesday({ c: { source: 'manual' } });
+    const r = shiftDay(store, d(7, 10, 20), { breaks: 'waive' });
+    expect(r.shortened.map((x) => [x.id, span(x)])).toEqual([['b', '10:20-11:00']]);
+    expect(at('c')).toBe('11:00-12:00');
+  });
+
+  it('with no baseline the settings\' availability bounds the day; when waiving the breaks would still drop a block, the question says so', () => {
+    store.saveSettings({ ...store.getSettings(), availability: [{ days: [3], start: '09:00', end: '15:30' }] });
+    store.setBaseline({ slots: [] });
+    wednesday();
+    const ask = shiftDay(store, d(7, 14, 30));
+    expect(ask.needsConfirmation).toBe(true);
+    expect(ask.summary).toBe('Shifting 2 blocks by 30 min keeps your breaks (15:00-17:00) but ends the day at 18:30, past 15:30. Waiving the breaks would still drop f; waive them, or keep them and end later?');
+    expect(at('e')).toBe('14:00-15:00');
+    const r = shiftDay(store, d(7, 14, 30), { breaks: 'waive' });
+    expect(at('e')).toBe('14:30-15:30');
+    expect(r.dropped.map((x) => x.id)).toEqual(['f']);
     expect(store.getBlock('f')).toMatchObject({ status: 'missed', start: d(7, 17).toISOString() }); // kept as missed at its time, so carry_over can owe it
-    expect(r.summary).toBe('Shifted 1 block to start now; dropped f (no room before 18:00).');
+    expect(r.summary).toBe('Shifted 1 block by 30 min, breaks waived; the day ends at 15:30; dropped f (no room before 15:30).');
+  });
+
+  it('breaks kept past the baseline: what would end after midnight is dropped', () => {
+    store.setBaseline({ slots: [slot(3, '09:00', '10:00', 'a'), slot(3, '22:00', '23:30', 'b')] });
+    store.insertBlocks([blk('a', 'a', d(7, 9), d(7, 10)), blk('b', 'b', d(7, 22), d(7, 23, 30))]);
+    const ask = shiftDay(store, d(7, 9, 45));
+    expect(ask.summary).toBe('Shifting 2 blocks by 45 min keeps your breaks (10:00-22:00) but drops b (no room before midnight). Waive the breaks to end at 23:30, or keep them?');
+    const r = shiftDay(store, d(7, 9, 45), { breaks: 'keep' });
+    expect(r.summary).toBe('Shifted 1 block by 45 min, breaks kept; the day ends at 10:45; dropped b (no room before midnight).');
   });
 
   it('a dropped block is missed, and carry_over owes it though its time has not come: to a gap today, else the next slot extended', () => {
     wednesday();
     store.addCommitment({ id: 'call', title: 'Call', start: d(7, 17).toISOString(), end: d(7, 17, 30).toISOString() });
-    store.insertBlocks([blk('m', 'a', d(7, 15), d(7, 17), { source: 'manual' })]);
-    expect(shiftDay(store, d(7, 14, 30)).summary).toBe('Shifted 1 block to start now; dropped f (no room before 18:00).');
+    expect(shiftDay(store, d(7, 14, 30), { breaks: 'waive' }).summary).toBe('Shifted 1 block by 30 min, breaks waived; the day ends at 15:30; dropped f (no room before 18:00).'); // f after the call would end 18:30
     expect(store.listBlocks().filter((b) => b.status === 'pending' || b.status === 'done').some((b) => b.id === 'f')).toBe(false); // not live: busy to nothing
+    expect(carryOver(store, 'f', d(7, 14, 30)).summary).toBe('f: 60 min carried to 15:30-16:30.'); // the blank stretch after the shifted e
+    expect(carryOver(store, 'f', d(7, 14, 31)).summary).toBe('f: already carried to 15:30-16:30.');
+  });
+
+  it('a dropped block with no gap left today is carried to its next slot this week, extended', () => {
+    wednesday();
+    store.addCommitment({ id: 'call', title: 'Call', start: d(7, 17).toISOString(), end: d(7, 17, 30).toISOString() });
+    store.insertBlocks([blk('m', 'a', d(7, 15, 30), d(7, 17), { source: 'manual' })]); // 15:30-17:00 is taken by hand
+    shiftDay(store, d(7, 14, 30), { breaks: 'waive' });
     expect(carryOver(store, 'f', d(7, 14, 30)).summary).toBe('f: 60 min carried to Thu 16:00 (slot extended).'); // 17:30-18:00 is too short; Thursday is not applied
-    expect(carryOver(store, 'f', d(7, 14, 31)).summary).toBe('f: already carried to Thu 16:00-17:00.');
   });
 
   it('a block a shift dropped, carried once the evening frees up, lands in the gap today', () => {
     wednesday();
     store.addCommitment({ id: 'call', title: 'Call', start: d(7, 17).toISOString(), end: d(7, 17, 30).toISOString() });
-    store.insertBlocks([blk('m', 'a', d(7, 15), d(7, 17), { source: 'manual' })]);
-    shiftDay(store, d(7, 14, 30));
+    store.insertBlocks([blk('m', 'a', d(7, 15, 30), d(7, 17), { source: 'manual' })]);
+    shiftDay(store, d(7, 14, 30), { breaks: 'waive' });
     store.deleteCommitment('call');
     expect(carryOver(store, 'f', d(7, 14, 40)).summary).toBe('f: 60 min carried to 17:00-18:00.');
   });
@@ -93,39 +149,29 @@ describe('shiftDay', () => {
     store.setBaseline({ slots: [slot(3, '09:00', '10:00', 'a'), slot(3, '10:00', '11:00', 'b'), slot(3, '11:00', '12:00', 'c')] }); // Wednesday ends at 12:00
     store.insertBlocks([blk('b', 'b', d(7, 10), d(7, 11)), blk('x', 'f', d(7, 11), d(7, 11, 30)), blk('c', 'c', d(7, 11, 30), d(7, 12))]);
     store.addCommitment({ id: 'call', title: 'Call', start: d(7, 11).toISOString(), end: d(7, 11, 30).toISOString() });
-    const r = shiftDay(store, d(7, 10, 20));
-    expect(at('b')).toBe('10:20-11:00');
+    const r = shiftDay(store, d(7, 10, 20), { breaks: 'waive' });
+    expect(at('b')).toBe('10:20-11:00'); // its whole hour would run into the call
     expect(r.dropped.map((x) => x.id)).toEqual(['x']); // priority 6 gives way so that c (priority 3) keeps its half hour
     expect(at('c')).toBe('11:30-12:00');
-    expect(r.summary).toBe('Shifted 1 block to start now; dropped f (no room before 12:00).');
+    expect(r.summary).toBe('Shifted 1 block by 20 min; the day ends at 12:00; dropped f (no room before 12:00).');
   });
 
-  it('done, skipped and manual blocks are not moved, nor a block whose clock is running; a block already as early as it can be is not counted', () => {
-    wednesday({ b: { runningSince: d(7, 10, 5).toISOString() }, c: { source: 'manual' }, d: { status: 'done' } });
-    const r = shiftDay(store, d(7, 10, 20));
-    expect(at('b')).toBe('10:00-11:00');
-    expect(at('c')).toBe('11:00-12:00');
-    expect(at('d')).toBe('13:00-14:00');
-    expect(at('e')).toBe('14:00-15:00');
-    expect(r.moved.map((x) => x.id)).toEqual(['f']);
-    expect(r.shortened).toEqual([]);
-    expect(at('f')).toBe('15:00-16:00');
+  it('done, skipped and manual blocks are not moved, nor a block whose clock is running', () => {
+    wednesday({ c: { source: 'manual' }, d: { status: 'done' } });
+    const r = shiftDay(store, d(7, 10, 20), { breaks: 'waive' });
+    expect(['b', 'c', 'd', 'e', 'f'].map(at)).toEqual(['10:20-11:00', '11:00-12:00', '13:00-14:00', '14:00-15:00', '17:00-18:00']);
+    expect(r.moved).toEqual([]);
+    expect(r.shortened.map((x) => x.id)).toEqual(['b']);
+    expect(r.summary).toBe('Shifted 1 block by 20 min, breaks waived; the day ends at 18:00.');
+    store.updateBlock('b', { runningSince: d(7, 10, 5).toISOString() });
+    expect(shiftDay(store, d(7, 10, 25)).summary).toBe('Nothing to shift: e starts at 14:00.');
+    store.updateBlock('e', { status: 'skipped' });
     store.updateBlock('f', { status: 'skipped' });
-    expect(shiftDay(store, d(7, 10, 20)).summary).toBe('Nothing to shift today.');
+    expect(shiftDay(store, d(7, 10, 25)).summary).toBe('Nothing to shift today.');
   });
 
   it('with no block left today there is nothing to shift', () => {
     expect(shiftDay(store, d(7, 10, 20))).toEqual({ moved: [], shortened: [], dropped: [], created: [], summary: 'Nothing to shift today.' });
-  });
-
-  it('with no baseline the settings\' availability bounds the day', () => {
-    store.saveSettings({ ...store.getSettings(), availability: [{ days: [3], start: '09:00', end: '15:30' }] });
-    store.setBaseline({ slots: [] });
-    wednesday();
-    const r = shiftDay(store, d(7, 14, 30));
-    expect(at('e')).toBe('14:30-15:00');
-    expect(r.dropped.map((x) => x.id)).toEqual(['f']); // 15:00-16:00 ends after 15:30
-    expect(r.summary).toBe('Shifted 1 block to start now; dropped f (no room before 15:30).');
   });
 });
 
@@ -395,14 +441,14 @@ describe('instance edits survive a re-apply of the baseline', () => {
   it('shift_day, then the baseline re-applied to this week: the shifted day stays as it is', () => {
     wednesday();
     store.deleteBlocks(['a']);
-    shiftDay(store, d(7, 10, 20));
+    shiftDay(store, d(7, 10, 20), { breaks: 'waive' });
     const before = store.listBlocks({ from: d(7, 0), to: d(8, 0) }).map((b) => [b.taskId, span(b), b.source]);
-    expect(before).toEqual([['b', '10:20-11:00', 'adjusted'], ['c', '11:00-12:00', 'baseline'], ['d', '13:00-14:00', 'baseline'], ['e', '14:00-15:00', 'baseline'], ['f', '15:00-16:00', 'adjusted']]); // c, d, e were already as early as they could be
+    expect(before).toEqual([['b', '10:20-11:20', 'adjusted'], ['c', '13:00-14:00', 'adjusted'], ['d', '14:00-15:00', 'adjusted'], ['e', '15:00-16:00', 'adjusted'], ['f', '17:00-18:00', 'baseline']]); // the break before f absorbed the push
     const r = applyToWeek(store, store.getBaseline()!, d(5, 0), d(7, 10, 20));
     // The adjusted blocks stay and are the sittings: b's slot is claimed by the adjusted b over it, f's 17:00 slot by the f shifted to 15:00 (pairing, round 3); both named.
     expect(store.listBlocks({ from: d(7, 0), to: d(8, 0) }).map((b) => [b.taskId, span(b), b.source])).toEqual(before);
-    expect(r.created.filter((b) => new Date(b.start) < d(8, 0)).map((b) => b.taskId)).toEqual(['c', 'd', 'e']);
-    expect(r.skipped.map((x) => [x.slot.taskId, x.reason])).toEqual([['b', 'already has b at 10:20'], ['f', 'already has f at 15:00']]);
+    expect(r.created.filter((b) => new Date(b.start) < d(8, 0)).map((b) => b.taskId)).toEqual(['f']); // f's unmoved copy is replaced by a fresh one
+    expect(r.skipped.map((x) => [x.slot.taskId, x.reason])).toEqual([['b', 'already has b at 10:20'], ['c', 'already has c at 13:00'], ['d', 'already has d at 14:00'], ['e', 'already has e at 15:00']]);
   });
 });
 
@@ -410,11 +456,11 @@ describe('instance operations compose', () => {
   beforeEach(() => { week(); wednesday(); });
 
   it('shift_day then carve_out: the shifted (adjusted) block under the call is moved, not left under it', () => {
-    shiftDay(store, d(7, 10, 20)); // b 10:20-11:00, c 11:00-12:00, f 15:00-16:00
+    shiftDay(store, d(7, 10, 20), { breaks: 'waive' }); // b 10:20-11:20, c 13:00-14:00, d 14:00-15:00, e 15:00-16:00, f 17:00-18:00
     const r = carveOut(store, d(7, 10, 30), d(7, 11), 'Call');
     expect(r.moved[0]).toMatchObject({ id: 'b', source: 'adjusted' });
-    expect(store.getBlock('b')).toMatchObject({ start: d(7, 11).toISOString(), end: d(7, 11, 40).toISOString(), source: 'adjusted' }); // its 40 minutes moved whole: the 10 before the call are under the minimum
-    expect(r.summary).toBe('Carved out Call 10:30-11:00; moved b to 11:00-11:40, c to 13:00-14:00, d to 14:00-15:00, e to 15:00-16:00, f to 16:00-17:00.');
+    expect(store.getBlock('b')).toMatchObject({ start: d(7, 11).toISOString(), end: d(7, 12).toISOString(), source: 'adjusted' }); // its hour moved whole: the 10 minutes before the call are under the minimum
+    expect(r.summary).toBe('Carved out Call 10:30-11:00; moved b to 11:00-12:00.');
   });
 
   it('carve then carve: the block the first carve moved is moved again by the second', () => {

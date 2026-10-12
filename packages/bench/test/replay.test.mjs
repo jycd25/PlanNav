@@ -90,10 +90,13 @@ describe('instance events', () => {
     expect(store.listCommitments().map((c) => `${c.title} ${hm(c.start)}-${hm(c.end)}`)).toEqual(['Lunch 12:00-13:00']);
   });
 
-  it('shift_day: the block in progress starts now, the later ones move up inside the usable spans; the block over at now is missed', async () => {
+  it('shift_day: asked without an answer it changes nothing; with the breaks waived the block in progress starts now whole, the later ones follow past busy time, nothing earlier than its slot; the block over at now is missed', async () => {
     const store = await applied();
-    await applyEvent(store, { type: 'shift_day' }, localDate('2026-10-12T10:20'));
-    expect(monday(store)).toEqual(['b 10:20-11:00 adjusted', 'c 11:00-12:00 adjusted', 'b 13:00-14:00 adjusted']);
+    const ask = await applyEvent(store, { type: 'shift_day' }, localDate('2026-10-12T10:20'));
+    expect(ask.needsConfirmation).toBe(true);
+    expect(monday(store)).toEqual(['b 10:00-11:00 baseline', 'c 13:00-14:00 baseline', 'b 15:00-16:00 baseline']);
+    await applyEvent(store, { type: 'shift_day', breaks: 'waive' }, localDate('2026-10-12T10:20'));
+    expect(monday(store)).toEqual(['b 10:20-11:20 adjusted', 'c 13:00-14:00 baseline', 'b 15:00-16:00 baseline']); // the breaks before c and the second b absorb the 20 minutes
     expect(store.listBlocks().find((b) => b.taskId === 'a').status).toBe('missed');
   });
 

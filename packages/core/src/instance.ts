@@ -88,31 +88,86 @@ function packWithDrops<T extends { block: Block }>(store: Store, day: Date, item
   }
 }
 
+/** Blank minutes inside `x`: its length minus the busy time it contains (overlapping busy intervals counted once). */
+function blankMinutes(x: Interval, busy: Interval[]): number {
+  const covered = busy.map((b) => ({ start: Math.max(b.start.getTime(), x.start.getTime()), end: Math.min(b.end.getTime(), x.end.getTime()) })).filter((b) => b.start < b.end).sort((a, b) => a.start - b.start);
+  let total = 0; let cursor = -Infinity;
+  for (const c of covered) { const s = Math.max(c.start, cursor); if (c.end > s) total += c.end - s; cursor = Math.max(cursor, c.end); }
+  return minutesBetween(x.start, x.end) - total / 60_000;
+}
+
+/** What to do with the breaks when the shifted day runs past its last usable minute: keep them (the day ends later) or waive them (they shrink to absorb the delay). */
+export type Breaks = 'keep' | 'waive';
+/** A shift that needs the user's answer first (`needsConfirmation`) changed nothing; its summary is the question to ask. */
+export interface ShiftResult extends InstanceResult { needsConfirmation?: true }
+
 /**
- * Today's pending planner and baseline blocks from the first one that ends after `now`, in start order: the block
- * containing `now` is shortened to start at `now` (end unchanged; the minutes before now are forfeited, not carried);
- * each later block moves up to the previous one's end, skipping busy time and staying inside the day's usable spans (a
- * block already as early as it can be stays). Blocks that would end after the day's last usable minute are dropped,
- * lowest priority first (never the block in progress), and kept at their time as missed. Done, skipped and manual
- * blocks are not moved, nor a block whose clock is running; a block over at `now` becomes missed. Moved and shortened blocks become 'adjusted'.
+ * Today's pending planner and baseline blocks from the first one that ends after `now`, in start order, moved later by
+ * the delay (now minus that first block's start; nothing is shifted when now is before it, and nothing ever moves
+ * earlier). The breaks (blank time between consecutive blocks; busy time is not a break) keep their length: each block
+ * lands at the later of its own time plus the delay and the previous block's end plus their break, pushed past busy
+ * time, so the block in progress starts now with its whole length (it keeps its old end instead when the whole no longer
+ * fits before busy time: the minutes before now are forfeited). When that ends every block by the day's last usable
+ * minute, it is done. Otherwise nothing changes and the result asks (`needsConfirmation`) whether to waive the breaks:
+ * `breaks: 'waive'` lets each break shrink to absorb the delay (no block earlier than its own slot) with the day's end
+ * as the wall; `breaks: 'keep'` keeps them and lets the day run past the baseline, up to midnight. What would end after
+ * the wall is dropped, lowest priority first (never the block in progress), and kept at its time as missed. Done,
+ * skipped and manual blocks are not moved, nor a block whose clock is running; a block over at `now` becomes missed.
+ * Moved and shortened blocks become 'adjusted'.
  */
-export function shiftDay(store: Store, at: Date): InstanceResult {
+export function shiftDay(store: Store, at: Date, opts: { breaks?: Breaks } = {}): ShiftResult {
   const now = toMinute(at);
   materializeMissed(store, now);
   const day = startOfDay(now);
-  const todays = store.listBlocks({ from: day, to: addDays(day, 1) });
-  const candidates = todays.filter((b) => isMovable(b) && !b.runningSince && new Date(b.end) > now).sort((a, b) => a.start.localeCompare(b.start)).map((block) => ({ block }));
-  const spans = usable(store, day);
+  const midnight = addDays(day, 1);
+  const none = { moved: [], shortened: [], dropped: [], created: [] };
+  const candidates = store.listBlocks({ from: day, to: midnight }).filter((b) => isMovable(b) && !b.runningSince && new Date(b.end) > now).sort((a, b) => a.start.localeCompare(b.start));
+  if (!candidates.length) return { ...none, summary: 'Nothing to shift today.' };
+  const delay = minutesBetween(iv(candidates[0]).start, now);
+  if (delay <= 0) return { ...none, summary: `Nothing to shift: ${nameOf(store, candidates[0])} starts at ${fmt(iv(candidates[0]).start)}.` };
+
+  const usableToday = usable(store, day);
+  const spans = usableToday.length ? usableToday : [{ start: day, end: midnight }];
+  const wall = spans[spans.length - 1].end;
+  const openEnded = [...spans.slice(0, -1), { start: spans[spans.length - 1].start, end: midnight }];
+  const busy = busyOn(store, day, new Set(candidates.map((b) => b.id)));
+  const breakBefore = candidates.map((b, i) => (i === 0 ? 0 : Math.max(0, blankMinutes({ start: iv(candidates[i - 1]).end, end: iv(b).start }, busy))));
+  const breakSpans = candidates.flatMap((b, i) => (breakBefore[i] > 0 ? [{ start: iv(candidates[i - 1]).end, end: iv(b).start }] : []));
+  type Item = { block: Block; minutes: number; gap: number };
+  const items: Item[] = candidates.map((block, i) => ({ block, minutes: minutesBetween(iv(block).start, iv(block).end), gap: breakBefore[i] }));
   const inProgress = (b: Block) => new Date(b.start) < now && now < new Date(b.end);
-  const { placed, dropped } = packWithDrops(store, day, candidates, now, ({ block }, cursor, taken) => {
-    const x = iv(block);
-    if (x.start < cursor && cursor < x.end) return { start: cursor, end: x.end }; // in progress: starts now, keeps its end
-    const minutes = minutesBetween(x.start, x.end);
-    const fit = firstFit(minutes, cursor, spans, taken);
-    if (!fit) return undefined;
-    const start = fit < x.start || !(inside(x, spans) && clear(x, taken)) ? fit : x.start;
-    return { start, end: new Date(start.getTime() + minutes * 60_000) };
-  }, ({ block }) => inProgress(block));
+  const plan = (mode: Breaks) => packWithDrops(store, day, items, now, (q, cursor, taken) => {
+    const own = iv(q.block);
+    const within = mode === 'keep' ? openEnded : spans;
+    if (inProgress(q.block)) {
+      const whole = { start: cursor, end: new Date(cursor.getTime() + q.minutes * 60_000) };
+      if (inside(whole, within) && clear(whole, taken)) return whole;
+      const rest = { start: cursor, end: own.end };
+      if (rest.start < rest.end && inside(rest, within) && clear(rest, taken)) return rest;
+    }
+    const target = new Date(mode === 'keep' ? Math.max(own.start.getTime() + delay * 60_000, cursor.getTime() + q.gap * 60_000) : Math.max(own.start.getTime(), cursor.getTime()));
+    const fit = firstFit(q.minutes, target, within, taken);
+    return fit ? { start: fit, end: new Date(fit.getTime() + q.minutes * 60_000) } : undefined;
+  }, (q) => inProgress(q.block));
+  const endOf = (p: { placed: Placement<Item>[] }) => (p.placed.length ? new Date(Math.max(...p.placed.map((x) => x.end.getTime()))) : now);
+  const fmtEnd = (d: Date) => (d.getTime() >= midnight.getTime() ? 'midnight' : fmt(d));
+  const names = (bs: Block[]) => bs.map((b) => nameOf(store, b)).join(', ');
+
+  const keep = plan('keep');
+  const overflow = endOf(keep) > wall;
+  const mode: Breaks | undefined = opts.breaks ?? (!overflow && !keep.dropped.length ? 'keep' : undefined);
+  if (!mode) {
+    const waive = plan('waive');
+    const issues = [overflow ? `ends the day at ${fmtEnd(endOf(keep))}, past ${fmtEnd(wall)}` : '', keep.dropped.length ? `drops ${names(keep.dropped)} (no room before midnight)` : ''].filter(Boolean).join(' and ');
+    const keepThem = overflow && !keep.dropped.length ? 'keep them and end later' : 'keep them';
+    const lead = `Shifting ${plural(candidates.length, 'block')} by ${delay} min`;
+    const summary = breakSpans.length
+      ? `${lead} keeps your breaks (${breakSpans.map(span).join(', ')}) but ${issues}. ${waive.dropped.length ? `Waiving the breaks would still drop ${names(waive.dropped)}; waive them, or ${keepThem}?` : `Waive the breaks to end at ${fmtEnd(endOf(waive))}, or ${keepThem}?`}`
+      : `${lead} ${issues}, and there is no break to waive. ${waive.dropped.length ? `Drop ${names(waive.dropped)} to end by ${fmtEnd(wall)}, or shift everything?` : `End at ${fmtEnd(endOf(waive))} instead (nothing moves earlier than its slot), or shift everything?`}`;
+    return { ...none, needsConfirmation: true, summary };
+  }
+
+  const { placed, dropped } = mode === 'keep' ? keep : plan('waive');
   const moved: Block[] = []; const shortened: Block[] = [];
   for (const p of placed) {
     const x = iv(p.item.block);
@@ -122,8 +177,9 @@ export function shiftDay(store: Store, at: Date): InstanceResult {
   }
   for (const b of dropped) store.updateBlock(b.id, { status: 'missed', statusChangedAt: now.toISOString() });
   const n = moved.length + shortened.length;
-  const droppedNote = dropped.length ? `; dropped ${dropped.map((b) => nameOf(store, b)).join(', ')} (${noRoom(spans)})` : '';
-  const summary = n === 0 && !dropped.length ? 'Nothing to shift today.' : `${n ? `Shifted ${plural(n, 'block')} to start now` : 'Nothing to shift'}${droppedNote}.`;
+  const droppedNote = dropped.length ? `; dropped ${names(dropped)} (no room before ${mode === 'keep' ? 'midnight' : fmtEnd(wall)})` : '';
+  const breaksNote = breakSpans.length ? `, breaks ${mode === 'keep' ? 'kept' : 'waived'}` : '';
+  const summary = n ? `Shifted ${plural(n, 'block')} by ${delay} min${breaksNote}; the day ends at ${fmtEnd(endOf({ placed }))}${droppedNote}.` : `Nothing to shift${droppedNote}.`;
   return { moved, shortened, dropped, created: [], summary };
 }
 

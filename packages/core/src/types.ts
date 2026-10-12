@@ -85,7 +85,11 @@ export interface Settings {
   minBlockMinutes: number;
   maxBlockMinutes: number;
   reviewWindow: 'day' | 'week';
+  memory: string;         // the assistant's memory note: how the user likes their schedule changed, in a few lines; the user sees and edits it in Settings
 }
+
+/** The memory note's longest form, in characters. */
+export const MEMORY_MAX = 2000;
 
 export interface Interval { start: Date; end: Date }
 
@@ -106,6 +110,7 @@ export const DEFAULT_SETTINGS: Settings = {
   minBlockMinutes: 30,
   maxBlockMinutes: 90,
   reviewWindow: 'week',
+  memory: '',
 };
 
 export const TASK_COLORS = ['#4f8cff', '#34c759', '#ff9f0a', '#af52de', '#ff375f', '#5ac8fa', '#ffd60a', '#ff6b35'];
@@ -131,7 +136,7 @@ export function normalizeSettings(raw: unknown): Settings {
     const w = { days: [...days].sort(), start: wh.start, end: wh.end };
     if (isAvailabilityWindow(w)) availability = [w];
   }
-  const num = (k: keyof Settings, min: number) => (typeof r[k] === 'number' && (r[k] as number) >= min ? (r[k] as number) : DEFAULT_SETTINGS[k] as number);
+  const num = (k: keyof Settings, min: number) => (Number.isFinite(r[k]) && (r[k] as number) >= min ? (r[k] as number) : DEFAULT_SETTINGS[k] as number);
   let segments = { ...DEFAULT_SEGMENTS };
   if (r.segments && typeof r.segments === 'object') {
     const g = r.segments as Record<string, unknown>;
@@ -149,13 +154,14 @@ export function normalizeSettings(raw: unknown): Settings {
     availability,
     segments,
     weights,
-    weekStartsOn: typeof r.weekStartsOn === 'number' && r.weekStartsOn >= 0 && r.weekStartsOn <= 6 ? r.weekStartsOn : DEFAULT_SETTINGS.weekStartsOn,
+    weekStartsOn: Number.isInteger(r.weekStartsOn) && (r.weekStartsOn as number) >= 0 && (r.weekStartsOn as number) <= 6 ? (r.weekStartsOn as number) : DEFAULT_SETTINGS.weekStartsOn,
     slotMinutes: num('slotMinutes', 5),
     minBlockMinutes: num('minBlockMinutes', 5),
     maxBlockMinutes: num('maxBlockMinutes', 5),
     reviewWindow: r.reviewWindow === 'day' ? 'day' : 'week',
     maxTasksPerDay: typeof r.maxTasksPerDay === 'number' && r.maxTasksPerDay >= 1 && r.maxTasksPerDay <= 50 ? Math.floor(r.maxTasksPerDay) : DEFAULT_SETTINGS.maxTasksPerDay,
     workStyle: r.workStyle === 'deep' || r.workStyle === 'varied' || r.workStyle === 'balanced' ? r.workStyle : 'unknown',
+    memory: typeof r.memory === 'string' ? r.memory.trim().slice(0, MEMORY_MAX) : '',
   };
 }
 

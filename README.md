@@ -15,7 +15,7 @@ Two messages, no editing by hand. "I'm starting now" is a direct action: the ser
 One week, as it happened, for a made-up grad student with a freelance client. Every change on it came from a sentence to the assistant or a click on a block:
 
 - **Tuesday:** "Busy from 14:00 to 15:30, dentist" carved the hour out and split the client block around it.
-- **Wednesday:** "I'm starting now" at 08:40 shifted the rest of the day up, and "I didn't finish Spanish" carried the missed 30 minutes to the first blank gap.
+- **Wednesday:** "I'm starting now" at 08:40 shifted the rest of the day later, and "I didn't finish Spanish" carried the missed 30 minutes to the first blank gap.
 - **Monday and Thursday:** a skipped gym session and a skipped reading block, each with a note the assistant will see next time it plans.
 - **Friday:** the thesis block was tracked from Start to Finish and shows the actual time, then an advisor call pushed the afternoon later.
 - **Hatched blocks** were never marked and became missed, so the record stays honest.
@@ -61,9 +61,10 @@ Most planners make you rebuild the week from scratch or let an AI rewrite your c
 
 - **Set up in one line.** Import a past week as your baseline from an `.ics` file or a Google Calendar secret iCal address, draw it on the Baseline tab, or add tasks and hours and ask for a suggested week.
 - **Apply the baseline** to this week or next. A re-apply keeps what you moved by hand and tells you what it could not place.
-- **Adjust the day in plain words.** "I'm starting now" shifts the rest of the day. "Busy from 14:00 to 15:00" carves the hour out and pushes what follows. "I didn't finish X" carries the remaining minutes to the next gap.
+- **Adjust the day in plain words.** "I'm starting now" shifts the rest of the day later by how late you are, breaks kept; if that runs past your day's end, it asks whether to waive the breaks or end later. "Busy from 14:00 to 15:00" carves the hour out and pushes what follows. "I didn't finish X" carries the remaining minutes to the next gap.
 - **Edit directly.** Drag blocks, resize them, mark them done or skipped, copy and paste them, or type "move X to 10".
-- **Track what actually happened.** Start, pause and finish a block, or say "I spent 45 minutes on reading". Unmarked blocks become missed, so the record is complete from day one.
+- **It remembers how you like changes.** After you answer a question like "waive the breaks or end later?", it offers to remember your answer. The note lives in Settings, where you can edit or clear it.
+- **Track what actually happened.** Start, pause and finish a block, or say "I spent 45 minutes on reading". Finishing a block you never started counts it as done as planned. Unmarked blocks become missed, so the record is complete from day one.
 - **Leave notes** on any block. The assistant reads the last two weeks of notes when it plans.
 - **Import and export.** Pull commitments from Apple Calendar or Google Calendar exports, and export the whole calendar as `.ics` or JSON.
 - **Version your baseline.** "This is my baseline" saves the current week as a new version; revert to any earlier one from the Baseline tab.

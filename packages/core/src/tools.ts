@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { AvailabilityWindow, Block, RecurringCommitment, Settings, Task, TaskSegment, WorkStyle } from './types.js';
-import { TASK_COLORS, WORK_STYLE_PRESETS, isAvailabilityWindow } from './types.js';
+import { MEMORY_MAX, TASK_COLORS, WORK_STYLE_PRESETS, isAvailabilityWindow } from './types.js';
 import type { Store } from './store.js';
 import { capThatFits, plan } from './plan.js';
 import { createBlock, findTaskBlock, markBlock, materializeMissed, moveBlock } from './mark.js';
@@ -47,13 +47,15 @@ export function resolveTask(store: Store, ref: string): Task {
   if (byId) return byId;
   const active = all.filter((t) => !t.archived);
   const needle = trimmed.toLowerCase();
+  const quote = (ts: Task[]) => ts.map((t) => `"${t.name}"`).join(', ');
+  const none = () => new Error(`No task matches "${ref}". Known tasks: ${active.length ? quote(active) : '(none)'}.`);
+  if (!needle) throw none(); // an empty reference names nothing, though every name "includes" it
   const exact = active.filter((t) => t.name.toLowerCase() === needle);
   if (exact.length === 1) return exact[0];
   const partial = active.filter((t) => t.name.toLowerCase().includes(needle));
   if (partial.length === 1) return partial[0];
-  const quote = (ts: Task[]) => ts.map((t) => `"${t.name}"`).join(', ');
   if (partial.length > 1) throw new Error(`"${ref}" matches several tasks: ${quote(partial)}. Use the exact name or id.`);
-  throw new Error(`No task matches "${ref}". Known tasks: ${active.length ? quote(active) : '(none)'}.`);
+  throw none();
 }
 
 const TIME_FORMATS = 'Use ISO 8601 like 2026-10-07T17:00:00+02:00, or "YYYY-MM-DD HH:MM", or "17:00" for today, or "tomorrow 09:00".';
@@ -68,15 +70,27 @@ const SUGGEST_NEEDS = {
 /** Parse a date-time the model may give loosely. Local time unless an offset is given. */
 export function parseWhen(input: string, now: Date): Date {
   const s = input.trim();
-  const hhmm = (h: string, m: string) => `${h.padStart(2, '0')}:${m}`;
+  const fail = () => new Error(`Cannot understand time "${input}". ${TIME_FORMATS}`);
+  // Hours 0-23 with minutes 0-59, or "24:00" for the midnight that ends the day; no rolling over into the next day.
+  const hhmm = (h: string, m: string) => {
+    const hh = Number(h), mm = Number(m);
+    if (mm > 59 || hh > 24 || (hh === 24 && mm !== 0)) throw fail();
+    return `${h.padStart(2, '0')}:${m}`;
+  };
   let m = /^(\d{1,2}):(\d{2})$/.exec(s);
   if (m) return atTime(now, hhmm(m[1], m[2]));
   m = /^(today|tomorrow)\s+(\d{1,2}):(\d{2})$/i.exec(s);
   if (m) return atTime(addDays(now, m[1].toLowerCase() === 'tomorrow' ? 1 : 0), hhmm(m[2], m[3]));
   m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?)?$/.exec(s);
-  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] ?? 0), Number(m[5] ?? 0));
+  if (m) {
+    const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    const d = atTime(new Date(year, month - 1, day), m[4] !== undefined ? hhmm(m[4], m[5]) : '00:00');
+    // A month over 12 or a day the month does not have would roll over; the date must read back as given.
+    if (new Date(year, month - 1, day).getMonth() !== month - 1 || new Date(year, month - 1, day).getDate() !== day) throw fail();
+    return d;
+  }
   const d = new Date(s);
-  if (Number.isNaN(d.getTime())) throw new Error(`Cannot understand time "${input}". ${TIME_FORMATS}`);
+  if (Number.isNaN(d.getTime())) throw fail();
   return d;
 }
 
@@ -122,7 +136,7 @@ function toWindow(w: { days: unknown; start: string; end: string }): Availabilit
   return win;
 }
 
-const daysField = z.union([z.string(), z.array(z.union([z.string(), z.number()]))]).describe('Weekdays: names ("mon", "Wednesday"), groups ("weekdays", "weekend", "daily"), or numbers 0 (Sun) to 6 (Sat)');
+const daysField = z.union([z.string(), z.number(), z.array(z.union([z.string(), z.number()]))]).describe('Weekdays: names ("mon", "Wednesday"), groups ("weekdays", "weekend", "daily"), or numbers 0 (Sun) to 6 (Sat)');
 const hhmmField = (what: string) => z.string().describe(`${what} as HH:MM in 24h local time, e.g. "09:00" or "20:30"`);
 
 function resolveRecurring(store: Store, ref: string): RecurringCommitment {
@@ -230,6 +244,10 @@ function fmtTime(iso: string): string {
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+/** The local calendar date as YYYY-MM-DD (toISOString would give the UTC date, the day before in UTC+ zones). */
+function localDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 /** A note on a block is the user's words; this cap keeps the prompt's Context and the calendar popover readable. */
 export const MAX_NOTE_CHARS = 2000;
 const timeOf = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -409,7 +427,7 @@ export const tools: ToolDef[] = [
       const today = workingIntervals({ start: startOfDay(now), end: addDays(startOfDay(now), 1) }, settings);
       const lastToday = today[today.length - 1];
       const notes: string[] = [];
-      if (capped) notes.push(`Planned up to ${DAY_NAMES[limit.getDay()]} ${limit.toISOString().slice(0, 10)} only: ${MAX_HORIZON_DAYS} days per call is the limit.`);
+      if (capped) notes.push(`Planned up to ${DAY_NAMES[limit.getDay()]} ${localDate(limit)} only: ${MAX_HORIZON_DAYS} days per call is the limit.`);
       // A block that became missed in this plan (it ended unmarked) is named with the way to redo it, since missed means
       // not today unless the user says so; a block with tracked minutes was finished instead and is not named.
       const nowMissed = r.missed.filter((b) => b.status === 'missed').map((b) => view(store, b));
@@ -606,7 +624,7 @@ export const tools: ToolDef[] = [
   }),
   def({
     name: 'track_time',
-    description: 'Run the clock on a block or log actual minutes: start (pauses any other running block; works on a block of any day, which stays where it is while the clock records the actual start), pause, finish (marks done; an early finish shortens the block and keeps the planned length), set (log minutes by hand). Pick the block by block_id, or by task (the block of that task the user most likely means right now). Example: { "task": "Deep work", "action": "start" }; { "task": "Deep work", "action": "finish" }; { "task": "Reading", "action": "set", "minutes": 45 }',
+    description: 'Run the clock on a block or log actual minutes: start (pauses any other running block; works on a block of any day, which stays where it is while the clock records the actual start), pause, finish (marks done; an early finish shortens the block and keeps the planned length; on a block never started the minutes from its planned start to now count, capped at its length), set (log minutes by hand). Pick the block by block_id, or by task (the block of that task the user most likely means right now). Example: { "task": "Deep work", "action": "start" }; { "task": "Deep work", "action": "finish" }; { "task": "Reading", "action": "set", "minutes": 45 }',
     schema: z.object({
       task: taskRef.optional(), block_id: z.string().optional().describe('Block id from get_schedule'),
       action: z.enum(['start', 'pause', 'finish', 'set']).describe('start | pause | finish | set (minutes required)'),
@@ -618,13 +636,14 @@ export const tools: ToolDef[] = [
       if (!block && input.task) { const t = resolveTask(store, input.task); block = findTaskBlock(store, t.id, now); if (!block) throw new Error(`No block for "${t.name}" today. Use get_schedule to find one, or add_block first.`); }
       if (!block && input.block_id) throw new Error(`Block not found: ${input.block_id}`);
       if (!block) throw new Error('Give block_id or task.');
+      const neverStarted = !block.runningSince && block.trackedMinutes === undefined && !block.startedAt;
       const r = trackBlock(store, block.id, input.action, now, input.minutes);
       const name = store.getTask(r.block.taskId)?.name ?? 'Unknown task';
       const range = `${fmtTime(r.block.start)}-${fmtTime(r.block.end)}`;
       const pausedNote = r.paused.length ? `; paused ${r.paused.map((p) => `"${store.getTask(p.taskId)?.name ?? '?'}" at ${p.trackedMinutes ?? 0} min`).join(', ')}` : '';
       const summary = input.action === 'start' ? `Started "${name}" ${range}${pausedNote}.`
         : input.action === 'pause' ? `Paused "${name}" at ${r.elapsedMinutes} min.`
-        : input.action === 'finish' ? (r.block.trackedMinutes === undefined ? `Finished "${name}" (no clock).` : `Finished "${name}" after ${r.elapsedMinutes} min${r.block.plannedMinutes ? ` (planned ${r.block.plannedMinutes})` : ''}.`)
+        : input.action === 'finish' ? (neverStarted ? `Finished "${name}" after ${r.elapsedMinutes} min, counted from its start (the clock never ran)${r.block.plannedMinutes ? `; planned ${r.block.plannedMinutes}` : ''}.` : `Finished "${name}" after ${r.elapsedMinutes} min${r.block.plannedMinutes ? ` (planned ${r.block.plannedMinutes})` : ''}.`)
         : `Logged ${r.block.trackedMinutes ?? 0} min on "${name}".`;
       return { ok: true, block: view(store, r.block), paused: r.paused.map((p) => view(store, p)), elapsedMinutes: r.elapsedMinutes, summary };
     },
@@ -645,7 +664,11 @@ export const tools: ToolDef[] = [
     name: 'remove_commitment',
     description: 'Remove a commitment by id (from get_schedule). Example: { "commitment_id": "…" }',
     schema: z.object({ commitment_id: z.string().describe('Commitment id') }),
-    run: (store, input) => { store.deleteCommitment(input.commitment_id); return { ok: true }; },
+    run: (store, input) => {
+      if (!store.listCommitments().some((c) => c.id === input.commitment_id)) throw new Error(`Commitment not found: ${input.commitment_id}`);
+      store.deleteCommitment(input.commitment_id);
+      return { ok: true };
+    },
   }),
   def({
     name: 'get_setup_status',
@@ -836,7 +859,7 @@ export const tools: ToolDef[] = [
         commitments: r.commitments,
         replaced: r.replaced,
         skipped: r.skipped,
-        summary: `Copied ${r.created.length} baseline block${r.created.length === 1 ? '' : 's'}${busy} onto the week of ${DAY_NAMES[weekStart.getDay()]} ${weekStart.toISOString().slice(0, 10)}${r.replaced ? `, replacing ${r.replaced}` : ''}${skippedNote}.`,
+        summary: `Copied ${r.created.length} baseline block${r.created.length === 1 ? '' : 's'}${busy} onto the week of ${DAY_NAMES[weekStart.getDay()]} ${localDate(weekStart)}${r.replaced ? `, replacing ${r.replaced}` : ''}${skippedNote}.`,
       };
     },
   }),
@@ -863,15 +886,18 @@ export const tools: ToolDef[] = [
   }),
   def({
     name: 'shift_day',
-    description: 'Shift the rest of today to start now ("I am late, move everything up"): the block containing now starts now (its end unchanged), each later pending block moves up to the previous one\'s end, skipping busy time inside the day\'s usable span; what would end after the day\'s last usable minute is dropped, lowest priority first. Done, skipped and hand-placed blocks stay. Example: {} -> { moved, shortened, dropped, summary: "Shifted 4 blocks to start now; dropped Reading (no room before 21:00)." }',
-    schema: z.object({}),
-    run: (store, _input, ctx) => {
-      const v = instanceView(store, shiftDay(store, ctx.now()));
+    description: 'Shift the rest of today later by how late the user is ("I am starting now", "I am late"): every pending block from the one in progress on moves by the delay with the breaks between blocks kept, the block in progress starting now; nothing moves earlier. When that would end the day past its last usable minute, nothing changes and the result has needsConfirmation with the question to ask: quote it. Call again with the answer: "breaks": "waive" (each break shrinks to absorb the delay, no block earlier than its slot; what still ends after the day\'s end is dropped, lowest priority first) or "keep" (the breaks stay, the day ends later). Done, skipped and hand-placed blocks stay. Example: {} -> { needsConfirmation: true, summary: "Shifting 5 blocks by 20 min keeps your breaks (15:00-17:00) but ends the day at 19:00, past 18:00. Waive the breaks to end at 18:00, or keep them and end later?" }; { "breaks": "waive" } -> { moved, shortened, dropped, summary: "Shifted 4 blocks by 20 min (Reading 10:20-11:20, Writing 13:00-14:00, Design 14:00-15:00, and 1 more), breaks waived; the day ends at 18:00." }',
+    schema: z.object({ breaks: z.enum(['keep', 'waive']).optional().describe('The user\'s answer when the shift asked about the breaks: "waive" or "keep"') }),
+    run: (store, input, ctx) => {
+      const r = shiftDay(store, ctx.now(), { breaks: input.breaks });
+      const v = instanceView(store, r);
+      if (r.needsConfirmation) return { ...v, needsConfirmation: true };
       // Name what now runs when (the first three, the rest counted), so a reply that quotes the summary names the change.
       const changed = [...v.shortened, ...v.moved].sort((a, b) => a.start.localeCompare(b.start));
-      if (!changed.length || !v.summary.includes('to start now')) return v;
+      const head = v.summary.match(/^Shifted \d+ blocks? by \d+ min/);
+      if (!changed.length || !head) return v;
       const named = `${describeBlocks(changed.slice(0, 3), false)}${changed.length > 3 ? `, and ${changed.length - 3} more` : ''}`;
-      return { ...v, summary: v.summary.replace('to start now', `to start now: ${named}`) };
+      return { ...v, summary: v.summary.replace(head[0], `${head[0]} (${named})`) };
     },
   }),
   def({
@@ -888,6 +914,16 @@ export const tools: ToolDef[] = [
     description: 'Carry a task\'s minutes still owed today (its blocks over by now, minus what was done or tracked) to the first blank gap today that holds them whole, else extend its next baseline slot this week earlier or later within blank time; else it says there is no room. Example: { "task": "Leetcode" } -> { created, moved, summary: "Leetcode: 40 min carried to 16:00-16:40." }',
     schema: z.object({ task: taskRef }),
     run: (store, input, ctx) => instanceView(store, carryOver(store, resolveTask(store, input.task).id, ctx.now())),
+  }),
+  def({
+    name: 'update_memory',
+    description: 'Replace the memory note: what you know about how the user likes their schedule changed (their preferences, one line each; the user sees and edits it in Settings). Pass the whole note: its lines plus the new one, or without the line to forget; empty text clears it. Ask "Want me to remember this preference?" before adding to it. Example: { "text": "- When I start late, waive the breaks and end on time." } -> { memory, summary: "Memory updated." }',
+    schema: z.object({ text: z.string().max(MEMORY_MAX).describe('The whole note, rewritten') }),
+    run: (store, input) => {
+      const memory = input.text.trim();
+      store.saveSettings({ ...store.getSettings(), memory });
+      return { memory, summary: memory ? 'Memory updated.' : 'Memory cleared.' };
+    },
   }),
   def({
     name: 'get_summary',

@@ -3,7 +3,7 @@ import type { Settings } from '@ds/core';
 import * as api from '../api.js';
 
 /**
- * Settings: the week's first day, the assistant backend, calendar import (optionally as the baseline week) and export. Availability, budgets,
+ * Settings: the week's first day, the assistant's memory note, the assistant backend, calendar import (optionally as the baseline week) and export. Availability, budgets,
  * sessions, segments, work style and the daily cap come from the baseline week now, so they are not edited here.
  */
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -15,6 +15,7 @@ export function SettingsPanel({ onClose, onChanged }: { onClose: () => void; onC
   const [apiKey, setApiKey] = useState('');
   const [hasKey, setHasKey] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [memory, setMemory] = useState('');
   const [importUrl, setImportUrl] = useState('');
   const [asBaseline, setAsBaseline] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -22,13 +23,18 @@ export function SettingsPanel({ onClose, onChanged }: { onClose: () => void; onC
   useEffect(() => {
     api.getSettings().then((r) => {
       setSettings(r.settings);
+      setMemory(r.settings.memory);
       setKind(r.assistant.kind);
       setModel(r.assistant.model ?? (r.assistant.kind === 'anthropic' ? 'claude-opus-5-5' : ''));
       setHasKey(r.assistant.hasApiKey);
     }).catch((e) => setStatus(String(e)));
   }, []);
 
-  if (!settings) return <><div className="scrim" onClick={onClose} /><div className="sheet"><div className="sheet-body">Loading…</div></div></>;
+  // Before the settings arrive: "Loading…", or the load error (status) with Close still available.
+  if (!settings) return <><div className="scrim" onClick={onClose} /><div className="sheet">
+    {status && <div className="sheet-head"><span>Settings</span><button className="btn" onClick={onClose}>Close</button></div>}
+    <div className="sheet-body">{status ? <div className="hint">{status}</div> : 'Loading…'}</div>
+  </div></>;
 
   const save = async () => {
     try {
@@ -50,6 +56,16 @@ export function SettingsPanel({ onClose, onChanged }: { onClose: () => void; onC
       setSettings(next);
       setStatus(`The week starts on ${DAY_NAMES[weekStartsOn]}.`);
       await onChanged();
+    } catch (e) { setStatus(e instanceof Error ? e.message : String(e)); }
+  };
+  // The assistant's memory note: it asks before adding a line in chat; here the user reads, edits or clears it.
+  const saveMemory = async () => {
+    try {
+      const next = { ...settings, memory: memory.trim() };
+      await api.putSettings({ settings: next });
+      setSettings(next);
+      setMemory(next.memory);
+      setStatus(next.memory ? 'Memory saved.' : 'Memory cleared.');
     } catch (e) { setStatus(e instanceof Error ? e.message : String(e)); }
   };
   const doImport = async (source: { ics: string } | { url: string }) => {
@@ -78,6 +94,11 @@ export function SettingsPanel({ onClose, onChanged }: { onClose: () => void; onC
             {settings.weekStartsOn !== 0 && settings.weekStartsOn !== 1 && <option value={settings.weekStartsOn}>{DAY_NAMES[settings.weekStartsOn]}</option>}
           </select>
         </div>
+
+        <h3>Memory</h3>
+        <div className="hint">What the assistant remembers about how you like your schedule changed, one line each. It asks before adding a line; edit or clear it here.</div>
+        <textarea className="memory" rows={Math.max(5, memory.split('\n').length + 1)} value={memory} onChange={(e) => setMemory(e.target.value)} placeholder="- When I start late, waive the breaks and end on time." aria-label="Memory" />
+        <div><button className="btn" onClick={saveMemory} disabled={memory.trim() === settings.memory}>Save memory</button></div>
 
         <h3>Import</h3>
         <div className="hint">Google Calendar: Settings → your calendar → “Secret address in iCal format”. Re-import any time to refresh.</div>

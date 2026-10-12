@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { MemoryStore } from '../src/store.js';
 import { markBlock } from '../src/mark.js';
 import { parseDays, parseWhen, resolveTask, runTool, tools } from '../src/tools.js';
-import { DEFAULT_SETTINGS, STANDARD_WEEK, type Block } from '../src/types.js';
+import { DEFAULT_SETTINGS, normalizeSettings, STANDARD_WEEK, type Block } from '../src/types.js';
 
 const d = (h: number, m = 0) => new Date(2026, 9, 7, h, m);
 const hm = (iso: string) => { const x = new Date(iso); return `${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`; };
@@ -19,12 +19,12 @@ describe('tool contracts', () => {
   it('exposes the expected names', () => {
     expect(tools.map((t) => t.name).sort()).toEqual([
       'add_block', 'add_commitment', 'add_recurring_commitment', 'apply_baseline', 'archive_task', 'carry_over', 'carve_out', 'clear_schedule', 'delete_block', 'get_now', 'get_schedule', 'get_setup_status', 'get_summary', 'import_as_baseline', 'import_calendar', 'list_tasks',
-      'mark_block', 'mark_task', 'move_block', 'note_block', 'plan_schedule', 'remove_commitment', 'remove_recurring_commitment', 'save_baseline', 'set_availability', 'set_work_style', 'shift_day', 'track_time', 'update_settings', 'upsert_task',
+      'mark_block', 'mark_task', 'move_block', 'note_block', 'plan_schedule', 'remove_commitment', 'remove_recurring_commitment', 'save_baseline', 'set_availability', 'set_work_style', 'shift_day', 'track_time', 'update_memory', 'update_settings', 'upsert_task',
     ]);
   });
-  it('plan_schedule is the from-scratch suggestion of a baseline, for when none exists; shift_day takes no input', () => {
+  it('plan_schedule is the from-scratch suggestion of a baseline, for when none exists; shift_day takes only the answer about the breaks', () => {
     expect(tools.find((t) => t.name === 'plan_schedule')!.description).toMatch(/^Suggest a baseline \(only when none exists\)/);
-    expect(Object.keys(tools.find((t) => t.name === 'shift_day')!.schema.shape)).toEqual([]);
+    expect(Object.keys(tools.find((t) => t.name === 'shift_day')!.schema.shape)).toEqual(['breaks']);
     expect(Object.keys(tools.find((t) => t.name === 'carve_out')!.schema.shape)).toEqual(['from', 'to', 'title']);
     expect(Object.keys(tools.find((t) => t.name === 'carry_over')!.schema.shape)).toEqual(['task']);
   });
@@ -754,12 +754,14 @@ describe('track_time', () => {
     expect(r.summary).toBe('Finished "A" after 25 min (planned 60).');
     expect(store.getBlock(b.id)!.status).toBe('done');
   });
-  it('finish with no clock says so and leaves the minutes unset', () => {
+  it('finish with no clock counts the minutes from the block\'s start, capped at its length, and says so', () => {
     const b = planA();
     const r = runTool(store, 'track_time', { task: 'A', action: 'finish' }, at(9, 25)) as any;
-    expect(r.summary).toBe('Finished "A" (no clock).');
+    expect(r.summary).toBe('Finished "A" after 25 min, counted from its start (the clock never ran); planned 60.');
     expect(store.getBlock(b.id)!.status).toBe('done');
-    expect(store.getBlock(b.id)!.trackedMinutes).toBeUndefined();
+    expect(store.getBlock(b.id)!.trackedMinutes).toBe(25);
+    store.insertBlocks([{ id: 'late', taskId: b.taskId, start: d(14).toISOString(), end: d(15).toISOString(), status: 'pending', source: 'planner', createdAt: '', statusChangedAt: null }]);
+    expect((runTool(store, 'track_time', { block_id: 'late', action: 'finish' }, at(15, 30)) as any).summary).toMatch(/after 60 min, counted from its start \(the clock never ran\)\.$/); // past its end: capped at the hour
   });
   it('start on a block of another day runs its clock where it is; finish on another day needs a start first; a later block today may be started', () => {
     const b = planA();
@@ -1024,23 +1026,44 @@ describe('the baseline week is the source of truth for availability', () => {
   });
 
   describe('instance operation tools', () => {
-    it('shift_day shifts today\'s blocks to start now and returns the blocks with task names', () => {
+    it('shift_day shifts today\'s blocks later by the delay, breaks kept, and returns the blocks with task names', () => {
       const { a, b } = seed();
       store.insertBlocks([mk('x', a, d(9), d(10)), mk('y', b, d(10, 30), d(11, 30))]);
-      const r = runTool(store, 'shift_day', {}, { now: () => d(9, 20) }) as any;
-      expect(r.shortened.map((v: any) => [v.taskName, hm(v.start), hm(v.end)])).toEqual([['A', '09:20', '10:00']]);
-      expect(r.moved.map((v: any) => [v.taskName, hm(v.start), hm(v.end)])).toEqual([['B', '10:00', '11:00']]);
+      const r = runTool(store, 'shift_day', { breaks: 'keep' }, { now: () => d(9, 20) }) as any;
+      expect(r.needsConfirmation).toBeUndefined();
+      expect(r.shortened).toEqual([]);
+      expect(r.moved.map((v: any) => [v.taskName, hm(v.start), hm(v.end)])).toEqual([['A', '09:20', '10:20'], ['B', '10:50', '11:50']]);
       // The tool's summary names what now runs when (the instance summary says only how many moved), so a reply that quotes it names the change.
-      expect(r.summary).toBe('Shifted 2 blocks to start now: A 09:20-10:00, B 10:00-11:00.');
+      expect(r.summary).toBe('Shifted 2 blocks by 20 min (A 09:20-10:20, B 10:50-11:50), breaks kept; the day ends at 11:50.');
     });
 
     it('shift_day names at most three shifted blocks and counts the rest; with nothing shifted the summary is as it was', () => {
       const { a, b } = seed();
       store.insertBlocks([mk('x', a, d(9), d(9, 30)), mk('y', b, d(9, 45), d(10, 15)), mk('z', a, d(10, 30), d(11)), mk('w', b, d(11), d(11, 30))]);
-      const r = runTool(store, 'shift_day', {}, { now: () => d(9, 20) }) as any;
-      expect(r.summary).toMatch(/^Shifted 4 blocks to start now: A 09:20-09:30, B 09:30-10:00, A 10:00-10:30, and 1 more\.$/);
+      const r = runTool(store, 'shift_day', { breaks: 'keep' }, { now: () => d(9, 20) }) as any;
+      expect(r.summary).toBe('Shifted 4 blocks by 20 min (A 09:20-09:50, B 10:05-10:35, A 10:50-11:20, and 1 more), breaks kept; the day ends at 11:50.');
       store.deleteBlocks(['x', 'y', 'z', 'w']);
       expect((runTool(store, 'shift_day', {}, { now: () => d(9, 20) }) as any).summary).toBe('Nothing to shift today.');
+    });
+
+    it('shift_day asks before ending the day late and changes nothing; the answer comes back as breaks', () => {
+      const { a, b } = seed();
+      store.insertBlocks([mk('x', a, d(9), d(10)), mk('y', b, d(10, 30), d(11, 30))]);
+      const ask = runTool(store, 'shift_day', {}, { now: () => d(9, 20) }) as any;
+      expect(ask).toMatchObject({ needsConfirmation: true, moved: [], shortened: [], dropped: [], summary: 'Shifting 2 blocks by 20 min keeps your breaks (10:00-10:30) but ends the day at 11:50, past 11:30. Waive the breaks to end at 11:30, or keep them and end later?' });
+      expect(hm(store.getBlock('x')!.start)).toBe('09:00');
+      const r = runTool(store, 'shift_day', { breaks: 'waive' }, { now: () => d(9, 20) }) as any;
+      expect(r.summary).toBe('Shifted 1 block by 20 min (A 09:20-10:20), breaks waived; the day ends at 11:30.');
+      expect(hm(store.getBlock('y')!.start)).toBe('10:30');
+    });
+
+    it('update_memory replaces the memory note whole, trimmed and capped; empty text clears it', () => {
+      expect(runTool(store, 'update_memory', { text: '  - When I start late, waive the breaks.\n' }, ctx)).toEqual({ memory: '- When I start late, waive the breaks.', summary: 'Memory updated.' });
+      expect(store.getSettings().memory).toBe('- When I start late, waive the breaks.');
+      expect(() => runTool(store, 'update_memory', { text: 'x'.repeat(2001) }, ctx)).toThrow();
+      expect(normalizeSettings({ memory: `  ${'y'.repeat(5000)}` }).memory).toHaveLength(2000); // what was stored by other means is trimmed and capped on read
+      expect(runTool(store, 'update_memory', { text: '' }, ctx)).toEqual({ memory: '', summary: 'Memory cleared.' });
+      expect(store.getSettings().memory).toBe('');
     });
 
     it('carve_out takes loose times and an optional title, adds the commitment and pushes the blocks', () => {

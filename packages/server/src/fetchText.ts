@@ -4,17 +4,46 @@ import { isIP } from 'node:net';
 const MAX_BYTES = 5_000_000;
 const MAX_REDIRECTS = 5;
 
-/** Loopback, link-local, private (RFC 1918), ULA, unspecified, and IPv4-mapped forms of those. */
-export function isPrivateAddress(ip: string): boolean {
-  let a = ip.trim().toLowerCase();
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(a);
-  if (mapped) a = mapped[1];
-  if (isIP(a) === 4) {
-    const [x, y] = a.split('.').map(Number);
-    return x === 127 || x === 10 || x === 0 || (x === 172 && y >= 16 && y <= 31) || (x === 192 && y === 168) || (x === 169 && y === 254) || (x === 100 && y >= 64 && y <= 127);
+/** Expand a valid IPv6 literal to its eight 16-bit groups (zone id stripped, a dotted IPv4 tail folded into the last two). */
+function hextets(ip: string): number[] {
+  const groups = ip.replace(/%.*$/, '').split(':');
+  const last = groups[groups.length - 1];
+  if (last.includes('.')) {
+    const [a, b, c, d] = last.split('.').map(Number);
+    groups.splice(groups.length - 1, 1, ((a << 8) | b).toString(16), ((c << 8) | d).toString(16));
   }
+  const gap = groups.indexOf('');
+  if (gap !== -1) {
+    const filled = groups.filter((g) => g !== '');
+    groups.splice(0, groups.length, ...groups.slice(0, gap).filter((g) => g !== ''), ...Array<string>(8 - filled.length).fill('0'), ...groups.slice(gap).filter((g) => g !== ''));
+  }
+  return groups.map((g) => parseInt(g, 16));
+}
+
+/** The IPv4 an IPv6 address carries, if it is IPv4-mapped (`::ffff:a.b.c.d`, or `::ffff:xxxx:xxxx` as the URL parser writes it), the deprecated SIIT form (`::ffff:0:a.b.c.d`), or IPv4-compatible (`::a.b.c.d`); else null. */
+function embeddedIPv4(ip: string): { v4: string; mapped: boolean } | null {
+  const h = hextets(ip);
+  if (h.length !== 8 || h.slice(0, 4).some((g) => g !== 0)) return null;
+  const mapped = (h[4] === 0 && h[5] === 0xffff) || (h[4] === 0xffff && h[5] === 0);
+  if (!mapped && (h[4] !== 0 || h[5] !== 0)) return null;
+  return { v4: `${h[6] >> 8}.${h[6] & 0xff}.${h[7] >> 8}.${h[7] & 0xff}`, mapped };
+}
+
+function isPrivateIPv4(a: string, { withZeroNet = true } = {}): boolean {
+  const [x, y] = a.split('.').map(Number);
+  return x === 127 || x === 10 || (withZeroNet && x === 0) || (x === 172 && y >= 16 && y <= 31) || (x === 192 && y === 168) || (x === 169 && y === 254) || (x === 100 && y >= 64 && y <= 127);
+}
+
+/** Loopback, link-local, private (RFC 1918), CGNAT, unspecified, ULA, and every IPv4-mapped or IPv4-compatible form of those, including the hex form the URL parser produces (`[::ffff:7f00:1]`). */
+export function isPrivateAddress(ip: string): boolean {
+  const a = ip.trim().toLowerCase().replace(/^\[|\]$/g, '');
+  if (isIP(a) === 4) return isPrivateIPv4(a);
   if (isIP(a) === 6) {
     if (a === '::1' || a === '::') return true;
+    const inner = embeddedIPv4(a);
+    // Node connects a mapped address as the IPv4 it carries, so 0/8 counts there; the deprecated compatible prefix is
+    // not translated by the OS, so only its loopback/private payloads are refused (`::2` stays as public as it was).
+    if (inner) return isPrivateIPv4(inner.v4, { withZeroNet: inner.mapped });
     return a.startsWith('fc') || a.startsWith('fd') || a.startsWith('fe8') || a.startsWith('fe9') || a.startsWith('fea') || a.startsWith('feb');
   }
   return false;

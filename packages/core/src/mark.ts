@@ -46,8 +46,10 @@ export function materializeMissed(store: Store, now: Date): Block[] {
   for (const b of store.listBlocks({ to: now })) {
     if (b.status === 'pending' && new Date(b.end) <= now) {
       // A running clock is left alone while the block's calendar day is still today (the overrun is the interesting number);
-      // once that day is over it is stopped at the block's end. A block with recorded minutes was worked on: finish it, not missed.
-      if (b.runningSince && startOfDay(now).getTime() <= startOfDay(new Date(b.end)).getTime()) continue;
+      // once that day is over it is stopped at the block's end, but only when it started before that end (it ran into the
+      // day's end): a clock started after the end (a past block the user started today) is left running. A block with
+      // recorded minutes was worked on: finish it, not missed.
+      if (b.runningSince && (startOfDay(now).getTime() <= startOfDay(new Date(b.end)).getTime() || new Date(b.runningSince) >= new Date(b.end))) continue;
       if (b.runningSince || (b.trackedMinutes ?? 0) > 0) { out.push(applyTrack(store, b.id, 'finish', new Date(b.end)).block); continue; }
       out.push(store.updateBlock(b.id, { status: 'missed', statusChangedAt: now.toISOString() }));
     }

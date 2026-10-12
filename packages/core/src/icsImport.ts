@@ -21,8 +21,9 @@ const BYDAY: Record<string, number> = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5
 const MAX_ITERATIONS = 20_000;
 
 function unescapeText(s: string): string {
-  // One pass, so an escaped backslash followed by "n" stays a backslash and an "n".
-  return s.replace(/\\([\;,nN])/g, (_, c: string) => (c === 'n' || c === 'N' ? '\n' : c));
+  // RFC 5545 escapes: "\\" -> "\", "\;" -> ";", "\," -> ",", "\n"/"\N" -> newline. One pass, left to right, so an escaped
+  // backslash followed by "n" stays a backslash and an "n".
+  return s.replace(/\\([\\;,nN])/g, (_, c: string) => (c === 'n' || c === 'N' ? '\n' : c));
 }
 
 interface Prop { params: Record<string, string>; value: string }
@@ -200,13 +201,20 @@ export function parseIcs(text: string, opts: ParseOptions): ImportResult {
   // Pass 1: parse every event; separate masters from RECURRENCE-ID overrides.
   const masters: RawEvent[] = [];
   const overrides = new Map<string, RawEvent[]>();
+  /** RECURRENCE-ID values of cancelled occurrences, by UID: the master skips them like EXDATEs. */
+  const cancelledOccurrences = new Map<string, string[]>();
   for (const p of events) {
     const uid = first(p, 'UID')?.value.trim() || `noid-${masters.length + result.skipped}`;
     const title = first(p, 'SUMMARY') ? unescapeText(first(p, 'SUMMARY')!.value).trim() || 'Untitled' : 'Untitled';
     const recurrenceId = first(p, 'RECURRENCE-ID')?.value.trim();
     const fullId = recurrenceId ? `${uid}#${recurrenceId}` : uid;
     if (OWN_UID.test(uid)) { skip('exported by this app', title); continue; }
-    if ((first(p, 'STATUS')?.value ?? '').trim().toUpperCase() === 'CANCELLED') { result.cancelled.push(`ics:${fullId}`); skip('cancelled', title); continue; }
+    if ((first(p, 'STATUS')?.value ?? '').trim().toUpperCase() === 'CANCELLED') {
+      result.cancelled.push(`ics:${fullId}`);
+      if (recurrenceId) (cancelledOccurrences.get(uid) ?? cancelledOccurrences.set(uid, []).get(uid)!).push(recurrenceId);
+      skip('cancelled', title);
+      continue;
+    }
     const startProp = first(p, 'DTSTART');
     const start = parseDateTime(startProp?.value, startProp?.params);
     if (start === 'date') { skip('all-day', title); continue; }
@@ -245,8 +253,8 @@ export function parseIcs(text: string, opts: ParseOptions): ImportResult {
     const rule = parseRule(ev.rrule, ev.start);
     if (!rule) { skip('unsupported repeat rule', ev.title); unsupported.push(ev.title); continue; }
     const overridden = new Set<number>();
-    for (const o of overrides.get(ev.uid) ?? []) {
-      const t = parseDateTime(o.recurrenceId);
+    for (const rid of [...(overrides.get(ev.uid) ?? []).map((o) => o.recurrenceId), ...(cancelledOccurrences.get(ev.uid) ?? [])]) {
+      const t = parseDateTime(rid);
       if (t && t !== 'date') overridden.add(t.date.getTime());
     }
     const duration = ev.end.getTime() - ev.start.date.getTime();

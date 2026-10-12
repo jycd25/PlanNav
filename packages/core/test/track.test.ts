@@ -41,9 +41,9 @@ describe('trackBlock', () => {
     expect(r.block.plannedMinutes).toBe(60);
     expect(r.block.trackedMinutes).toBe(40);
     expect(r.block.runningSince).toBeNull();
-    const tiny = trackBlock(store, 'b1', 'finish', d(7, 10, 1)); // never started: no clock, end stays one slot after start
+    const tiny = trackBlock(store, 'b1', 'finish', d(7, 10, 1)); // never started: the end stays one slot after start, and the minute since its start counts
     expect(tiny.block.end).toBe(d(7, 10, 15).toISOString());
-    expect(tiny.block.trackedMinutes).toBeUndefined();
+    expect(tiny.block.trackedMinutes).toBe(1);
   });
   it('finish after the end keeps the times and records the minutes; pause then finish sums the stretches', () => {
     trackBlock(store, 'a1', 'start', d(7, 9));

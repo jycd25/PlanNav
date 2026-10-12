@@ -176,7 +176,8 @@
       "end": "2026-10-12T12:00"
     },
     {
-      "type": "shift_day"
+      "type": "shift_day",
+      "breaks": "waive"
     }
   ]
 }

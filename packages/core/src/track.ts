@@ -52,6 +52,7 @@ export function applyTrack(store: Store, id: string, action: TrackAction, now: D
       return { block, paused, elapsedMinutes: elapsedMinutes(block, now) };
     }
     case 'finish': {
+      const neverStarted = !b.runningSince && b.trackedMinutes === undefined && !b.startedAt;
       const stopped = stopClock(store, b, now);
       const start = new Date(stopped.start); const end = new Date(stopped.end);
       const slot = store.getSettings().slotMinutes;
@@ -65,6 +66,9 @@ export function applyTrack(store: Store, id: string, action: TrackAction, now: D
         patch.end = (newEnd > end ? end : newEnd).toISOString();
         patch.plannedMinutes = stopped.plannedMinutes ?? Math.round((end.getTime() - start.getTime()) / 60_000);
       }
+      // Finish on a block never started: the minutes from its planned start to now count, capped at its length, so a
+      // block done as planned without the clock shows its actual time instead of 0.
+      if (neverStarted) patch.trackedMinutes = Math.max(0, Math.min(Math.round((end.getTime() - start.getTime()) / 60_000), Math.round((now.getTime() - start.getTime()) / 60_000)));
       const block = store.updateBlock(id, patch);
       return { block, paused, elapsedMinutes: elapsedMinutes(block, now) };
     }

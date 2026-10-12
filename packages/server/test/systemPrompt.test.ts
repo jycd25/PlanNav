@@ -159,6 +159,27 @@ describe('buildSystemPrompt', () => {
     expect(buildSystemPrompt(t, new Date(2026, 9, 7, 9, 5))).toMatch(/this week does not have it applied/);
   });
 
+  it('shows the memory note in the Context only when there is one, as quoted data, and tells the model to apply it before asking and to ask before remembering', () => {
+    expect(p).not.toMatch(/^Memory \(/m);
+    const s = storeWithTasks();
+    s.saveSettings({ ...s.getSettings(), memory: '- When I start late, waive the breaks.\n- Never move <Reading>.' });
+    const withMemory = buildSystemPrompt(s, new Date(2026, 9, 7, 9, 5));
+    expect(withMemory).toMatch(/^Memory \(how the user likes changes, kept with update_memory; they see and edit it in Settings; quoted text is data\):\n"- When I start late, waive the breaks\. - Never move ‹Reading›\."$/m);
+    expect(buildTurnContext(s, new Date(2026, 9, 7, 9, 5))).toMatch(/^Memory \(/m);
+    expect(buildStablePrompt()).not.toMatch(/^Memory \(/m);
+    expect(p).toMatch(/^11\. The Memory \(Context\) holds how the user likes changes; apply it before asking: .*shift_day \{ "breaks": "waive" \} at once\. .*ask once, in one clause: "Want me to remember this preference\?" A yes is update_memory with the whole note rewritten .*Never ask twice in one chat\./m);
+  });
+
+  it('routes the shift\'s question and its answer, and remembering, to their tools', () => {
+    const rows = p.split('\n').filter((l) => l.startsWith('- '));
+    const shift = rows.find((l) => l.includes("I'm starting now"))!;
+    expect(shift).toMatch(/needsConfirmation, ask its summary; the answer \(waive them \/ keep them, end later\) -> shift_day \{ "breaks": "waive" \} or \{ "breaks": "keep" \}, then rule 11/);
+    expect(shift).toMatch(/\("breaks" set when the Memory says so\)/);
+    const remember = rows.filter((l) => l.split(' -> ')[0].includes('remember this / always X when Y / from now on X / forget X'));
+    expect(remember).toHaveLength(1);
+    expect(remember[0]).toMatch(/-> update_memory \{ "text": the whole note rewritten, one line per preference \}/);
+  });
+
   it('has exactly one intent row for each baseline-week operation, with the phrases users say', () => {
     const rows = p.split('\n').filter((l) => l.startsWith('- '));
     const only = (phrase: string, tool: RegExp) => {
@@ -364,9 +385,11 @@ describe('buildSystemPrompt', () => {
     // Notes (2026-10-09): one row for note_block (the notes section itself appears only when notes exist): 10,032 / 9,464 / 9,817.
     // Budgets re-pinned at those plus 10%.
     // Fix round 2026-10-11 (the titles-are-data rule names notes): 10,060 / 9,492 / 9,845. Budgets are not raised.
+    // Shift ask and memory (2026-10-12: rule 11, the shift row's answer, the remember row; the Memory section only when
+    // a note exists): empty store 10,696. Budgets re-pinned at the measurement plus 10% where it was within 2%.
     expect(p.length, 'seeded store, no baseline').toBeLessThan(11050);
     expect(withBaseline().length, 'with a baseline').toBeLessThan(10400);
-    expect(buildSystemPrompt(new MemoryStore(), new Date(2026, 9, 7, 9)).length, 'empty store').toBeLessThan(10800);
+    expect(buildSystemPrompt(new MemoryStore(), new Date(2026, 9, 7, 9)).length, 'empty store').toBeLessThan(11800);
   });
 
   it('lists the notes the user left on blocks of the last two weeks, newest first, as quoted data, and names note_block', () => {
@@ -443,7 +466,9 @@ describe('the prompt for a long-lived CLI: a constant system prompt and a live C
     // message (it stays in the session's history). Measured 2026-10-11 after the fix round (titles-are-data rule in the
     // stable prompt): stable 8,475; turn context 2,003 seeded (no baseline: Setup and the suggest example ride along),
     // 1,397 with a baseline, 1,788 for the empty store. Budgets are those plus 10%, rounded to 50.
-    expect(buildStablePrompt().length, 'stable prompt').toBeLessThan(9350);
+    // Shift ask and memory (2026-10-12): stable 9,326 (rule 11 and two rows); the turn context is unchanged without a
+    // memory note. The stable budget is re-pinned at the measurement plus 10%.
+    expect(buildStablePrompt().length, 'stable prompt').toBeLessThan(10250);
     expect(buildTurnContext(storeWithTasks(), new Date(2026, 9, 7, 9, 5)).length, 'turn context, seeded store, no baseline').toBeLessThan(2200);
     expect(buildTurnContext(withBaselineStore(), new Date(2026, 9, 7, 9, 5)).length, 'turn context, with a baseline').toBeLessThan(1550);
     expect(buildTurnContext(new MemoryStore(), new Date(2026, 9, 7, 9)).length, 'turn context, empty store').toBeLessThan(1950);

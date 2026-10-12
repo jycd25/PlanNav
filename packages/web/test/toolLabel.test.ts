@@ -15,6 +15,12 @@ describe('toolLabel', () => {
     }
   });
 
+  it('a shift that asked first says so, and the memory tool shows the note', () => {
+    expect(toolLabel(part('shift_day', { needsConfirmation: true, summary: 'Shifting 5 blocks by 20 min keeps your breaks (15:00-17:00) but ends the day at 19:00, past 18:00. Waive the breaks to end at 18:00, or keep them and end later?' }))).toMatch(/^Asked before shifting: Shifting 5 blocks/);
+    expect(toolLabel(part('update_memory', { memory: '- When I start late,\n  waive the breaks.', summary: 'Memory updated.' }))).toBe('Updated memory: - When I start late, waive the breaks.');
+    expect(toolLabel(part('update_memory', { memory: '', summary: 'Memory cleared.' }))).toBe('Updated memory: cleared');
+  });
+
   it('a refusal ({ ok: false, note }) shows its note', () => {
     expect(toolLabel(part('plan_schedule', { ok: false, note: 'A baseline is set.' }))).toBe('Planned schedule: A baseline is set.');
   });

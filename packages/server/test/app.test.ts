@@ -192,6 +192,14 @@ describe('api', () => {
     const put2 = await app.request('/api/settings', { ...json({ settings: { ...DEFAULT_SETTINGS, availability: STANDARD_WEEK, slotMinutes: 30 } }), method: 'PUT' });
     expect(put2.status).toBe(200);
     expect(store.getSettings().slotMinutes).toBe(30);
+    // The memory note rides with the settings: set from the Settings dialog, kept when a later PUT leaves it out.
+    const withMemory = await app.request('/api/settings', { ...json({ settings: { ...DEFAULT_SETTINGS, availability: STANDARD_WEEK, memory: '- When I start late, waive the breaks.' } }), method: 'PUT' });
+    expect(withMemory.status).toBe(200);
+    expect(store.getSettings().memory).toBe('- When I start late, waive the breaks.');
+    expect((await (await app.request('/api/settings')).json() as any).settings.memory).toBe('- When I start late, waive the breaks.');
+    const { memory: _m, ...noMemory } = DEFAULT_SETTINGS;
+    await app.request('/api/settings', { ...json({ settings: { ...noMemory, availability: STANDARD_WEEK } }), method: 'PUT' });
+    expect(store.getSettings().memory).toBe('- When I start late, waive the breaks.');
     const bad = await app.request('/api/settings', { ...json({ assistant: { kind: 'anthropic', model: 'x' } }), method: 'PUT' });
     expect(bad.status).toBe(200); // key already stored, so omitting it keeps the old one
     assistant.config = { kind: 'claude-code' };
@@ -361,6 +369,15 @@ describe('direct actions in the chat route', () => {
     expect(ev[2].delta).toMatch(/Leetcode|Shifted|shift/i);
     expect(ev[3].stats).toMatchObject({ direct: true });
     expect(store.getBlock('b1')!.start).toBe(d(9).toISOString()); // the day really shifted
+  });
+
+  it('with a memory note, "I\'m starting now" goes to the model, which reads the note (the shift may ask about the breaks)', async () => {
+    seedDay();
+    store.saveSettings({ ...store.getSettings(), memory: '- When I start late, waive the breaks.' });
+    const ev = await events(await app.request('/api/chat', json({ message: "I'm starting now" })));
+    expect(calls).toEqual(["I'm starting now"]);
+    expect(ev.some((e) => e.type === 'stats' && e.stats.direct)).toBe(false);
+    expect(store.getBlock('b1')!.start).toBe(d(8, 30).toISOString()); // nothing ran directly
   });
 
   it('answers "What\'s on today?" and "How am I doing?" from the read tools', async () => {

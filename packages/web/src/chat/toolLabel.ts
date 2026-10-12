@@ -8,6 +8,7 @@ const LABELS: Record<string, string> = {
   remove_recurring_commitment: 'Removed weekly commitment', update_settings: 'Updated settings', import_calendar: 'Imported calendar',
   shift_day: 'Shifted the day', carve_out: 'Carved out time', carry_over: 'Carried over',
   import_as_baseline: 'Imported baseline', apply_baseline: 'Applied baseline', save_baseline: 'Saved baseline',
+  update_memory: 'Updated memory',
 };
 
 /** Tools whose result carries a one-sentence `summary` worth showing in the chat log. */
@@ -19,6 +20,8 @@ export function toolLabel(p: Extract<Part, { type: 'tool' }>): string {
   const r = (p.result && typeof p.result === 'object' ? p.result : undefined) as Record<string, unknown> | undefined;
   if (p.isError) return `${base}: ${String(r && 'error' in r ? r.error : p.result)}`;
   if (r && r.ok === false && typeof r.note === 'string') return `${base}: ${r.note}`;
+  if (p.name === 'shift_day' && r?.needsConfirmation && typeof r.summary === 'string') return `Asked before shifting: ${r.summary}`;
+  if (p.name === 'update_memory' && r && typeof r.memory === 'string') return `${base}: ${r.memory ? r.memory.replace(/\s+/g, ' ').slice(0, 120) : 'cleared'}`;
   if (WITH_SUMMARY.has(p.name) && r && typeof r.summary === 'string') return `${base}: ${r.summary}`;
   if ((p.name === 'mark_task' || p.name === 'mark_block') && r && typeof r.taskName === 'string') return `${base}: ${r.taskName} → ${String(r.status)}`;
   if (p.name === 'upsert_task' && r && typeof r.name === 'string') return `${base}: ${r.name}`;

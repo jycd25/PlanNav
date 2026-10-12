@@ -55,7 +55,7 @@ export function matchTask(title: string, tasks: Task[]): Task | undefined {
   const matches = tasks.filter((task) => {
     const n = normalize(task.name);
     if (!n) return false;
-    if (t.includes(n) || n.includes(t)) return true;
+    if (t && (t.includes(n) || n.includes(t))) return true;
     if (tokens(task.name).some((tok) => tt.has(tok))) return true;
     for (const a of acronyms(task.name)) if (shortTokens.has(a)) return true;
     return false;

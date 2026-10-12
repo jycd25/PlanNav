@@ -1,6 +1,6 @@
 {
   "name": "plannav",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A local-first calendar that plans your week from a baseline and adjusts the day when life interrupts. Chat assistant acts only through tested scheduling tools.",
   "license": "Apache-2.0",
   "type": "module",

@@ -38,6 +38,7 @@ const settingsSchema = z.object({
   minBlockMinutes: z.number().int().min(5),
   maxBlockMinutes: z.number().int().min(5),
   reviewWindow: z.enum(['day', 'week']),
+  memory: z.string().max(2000).optional(),
 });
 
 const assistantSchema = z.discriminatedUnion('kind', [
@@ -174,7 +175,7 @@ export function createApp(deps: AppDeps) {
     if (body.settings) {
       if (body.settings.minBlockMinutes > body.settings.maxBlockMinutes) throw new HttpError(400, 'minBlockMinutes must not exceed maxBlockMinutes');
       const current = store.getSettings();
-      const settings: Settings = { ...body.settings, segments: body.settings.segments ?? current.segments, weights: body.settings.weights ?? current.weights, maxTasksPerDay: body.settings.maxTasksPerDay ?? current.maxTasksPerDay, workStyle: body.settings.workStyle ?? current.workStyle, availability: body.settings.availability.map((w) => ({ ...w, days: [...w.days].sort() })) };
+      const settings: Settings = { ...body.settings, segments: body.settings.segments ?? current.segments, weights: body.settings.weights ?? current.weights, maxTasksPerDay: body.settings.maxTasksPerDay ?? current.maxTasksPerDay, workStyle: body.settings.workStyle ?? current.workStyle, memory: body.settings.memory ?? current.memory, availability: body.settings.availability.map((w) => ({ ...w, days: [...w.days].sort() })) };
       store.saveSettings(settings);
     }
     if (body.assistant) {
@@ -248,6 +249,8 @@ export function createApp(deps: AppDeps) {
     const t0 = performance.now();
     const action = matchDirect(message);
     if (!action) return false;
+    // The memory note may say what to answer when the shift asks about the breaks; only the model reads it, so the phrase goes there.
+    if (action.tool === 'shift_day' && store.getSettings().memory.trim()) return false;
     let result: unknown;
     try { result = await runTool(store, action.tool, action.input, ctx); } catch { return false; }
     const reply = directReply(result);

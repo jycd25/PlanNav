@@ -193,9 +193,11 @@ export class SqliteStore implements Store {
   }
   saveSettings(s: Settings) { this.setJson('settings', s); }
 
+  /** A kv row that is not valid JSON (a crash mid-write, a hand edit) reads as absent, with one warning, so the app still opens; the next save replaces it. */
   getJson<T>(key: string): T | undefined {
     const r = this.db.prepare('SELECT value FROM kv WHERE key = ?').get(key) as unknown as { value: string } | undefined;
-    return r ? (JSON.parse(r.value) as T) : undefined;
+    if (!r) return undefined;
+    try { return JSON.parse(r.value) as T; } catch { console.warn(`plannav: the "${key}" row in the database is not valid JSON; using defaults until it is saved again.`); return undefined; }
   }
   setJson(key: string, value: unknown) {
     this.db.prepare('INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, JSON.stringify(value));

@@ -79,7 +79,7 @@ export async function applyEvent(store, ev, now, opts = {}) {
     case 'save_baseline': return runTool(store, 'save_baseline', { confirm: true, days: ev.days }, ctx);
     case 'apply_baseline': return runTool(store, 'apply_baseline', { week_of: ev.weekOf }, ctx);
     case 'clear_schedule': return runTool(store, 'clear_schedule', {}, ctx);
-    case 'shift_day': return runTool(store, 'shift_day', {}, ctx);
+    case 'shift_day': return runTool(store, 'shift_day', { breaks: ev.breaks }, ctx);
     case 'carve_out': return runTool(store, 'carve_out', { from: toolTime(ev.from), to: toolTime(ev.to), title: ev.title }, ctx);
     case 'carry_over': return runTool(store, 'carry_over', { task: ev.task }, ctx);
     case 'import_baseline': {

@@ -15,9 +15,13 @@ export function applyEvent(messages: Message[], e: AssistantEvent): Message[] {
       if (tail && tail.type === 'text') parts[parts.length - 1] = { type: 'text', text: tail.text + e.delta };
       else parts.push({ type: 'text', text: e.delta });
       break;
-    case 'tool_call':
-      parts.push({ type: 'tool', id: e.id, name: e.name, input: e.input, pending: true });
+    case 'tool_call': {
+      // The result may have arrived first (matched by id): fill that finished row's name and input instead of adding a pending duplicate.
+      const i = parts.findIndex((p) => p.type === 'tool' && p.id === e.id && !p.pending);
+      if (i >= 0) parts[i] = { ...(parts[i] as Extract<Part, { type: 'tool' }>), name: e.name, input: e.input };
+      else parts.push({ type: 'tool', id: e.id, name: e.name, input: e.input, pending: true });
       break;
+    }
     case 'tool_result': {
       const i = parts.findIndex((p) => p.type === 'tool' && p.id === e.id);
       const filled: Part = { type: 'tool', id: e.id, name: e.name, input: i >= 0 ? (parts[i] as Extract<Part, { type: 'tool' }>).input : undefined, result: e.result, isError: Boolean(e.isError), pending: false };

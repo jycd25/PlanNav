@@ -122,6 +122,7 @@ a.btn { text-decoration: none; display: inline-block; }
 .chip { border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
 .chip:hover { background: var(--surface); }
 .chat-input { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
+.sheet textarea.memory { flex: none; width: 100%; min-height: 120px; box-sizing: border-box; resize: vertical; line-height: 1.45; border: 1px solid var(--border-strong); border-radius: 6px; padding: 8px; font: inherit; font-size: 13px; background: var(--surface); color: var(--text); }
 .chat-input textarea { flex: 1; resize: none; border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 10px; font: inherit; background: var(--surface); color: var(--text); min-height: 38px; max-height: 120px; }
 .chat-hint { padding: 0 12px 8px; color: var(--text-2); font-size: 11px; }
 
